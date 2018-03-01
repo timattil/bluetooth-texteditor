@@ -23,10 +23,12 @@ class Text_window(tk.Text):
         tk.Text.__init__(self, parent)
         self.parent = parent
         self.last_hash = self.get_hash()
+        self.config(undo=True)
 
     def start(self):
         self.set_last()
         self.last_written()
+        self.bind('<BackSpace>', self.text_deleted)
 
     def set_last(self):
         self.mark_set('last', 'insert')
@@ -60,6 +62,11 @@ class Text_window(tk.Text):
         self.set_last()
         return out
 
+    def text_deleted(self, *args):
+        deleted_char = self.get('insert -1 chars', 'insert')
+        print(now(), "DELETED:", deleted_char)
+        self.delete('insert -1 chars', 'insert')
+        return 'break'
 
 if __name__ == '__main__':
     program = Text_editor_program()
