@@ -28,6 +28,7 @@ class Text_window(tk.Text):
         self.set_last()
         self.last_written()
         self.bind('<BackSpace>', self.text_deleted)
+        self.bind('<Control-x>', self.cut_text)
 
     def set_last(self):
         self.mark_set('last', 'insert')
@@ -70,6 +71,20 @@ class Text_window(tk.Text):
             _to = 'insert'
         deleted_char = self.get(_from, _to)
         print(now(), "DELETED:", deleted_char, self.index(_from), self.index(_to))
+        self.delete(_from, _to)
+        return 'break'
+
+    def cut_text(self, *args):
+        try:
+            _from = self.index('sel.first')
+            _to = self.index('sel.last')
+        except tk.TclError:
+            print(now(), 'CUT: no selection.')
+            return 'break'
+        deleted_char = self.get(_from, _to)
+        self.parent.clipboard_clear()
+        self.parent.clipboard_append(deleted_char)
+        print(now(), "CUT:", deleted_char, self.index(_from), self.index(_to))
         self.delete(_from, _to)
         return 'break'
 
