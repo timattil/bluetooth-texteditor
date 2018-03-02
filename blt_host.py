@@ -11,12 +11,17 @@ def now():
 class Text_editor(tk.Tk):
     def __init__(self, send_queue, recv_queue):
         tk.Tk.__init__(self)
+        self.text_bouncer = Text_bouncer(self, send_queue, recv_queue)
         self.set_text_window()
 
     def set_text_window(self):
         self.text_window = Text_window(self)
         self.text_window.grid()
         self.text_window.start()
+
+    def quit(self):
+        self.text_bouncer.stop()
+        self.text_bouncer.join()
 
 class Text_window(tk.Text):
     def __init__(self, parent):
@@ -92,9 +97,31 @@ class Text_window(tk.Text):
         self.delete(_from. _to)
         return 'break'
 
-class Bluetooth_comms(th.Thread):
-    def __init__(self, send_queue, recv_queue):
+class Text_bouncer(th.Thread):
+    def __init__(self, parent, send_queue, recv_queue):
         th.Thread.__init__(self)
+        self.parent = parent
+        self._stop_event = th.Event()
+        self.start()
+
+    def run(self):
+        while not self._stop_event.is_set():
+            try:
+                data = recv_queue.get_nowait()
+                self.parent.text_window.insert('last', data)
+                recv_queue.task_done()
+            except queue.Empty:
+                pass
+
+    def stop(self):
+        self._stop_event.set()
+
+class Bluetooth_comms(th.Thread):
+    def __init__(self, sock, send_queue, recv_queue):
+        th.Thread.__init__(self)
+        self.sock = sock
+        self.send_queue = send_queue
+        self.recv_queue = recv_queue
         self._stop_event = th.Event()
         self.start()
 
@@ -103,8 +130,6 @@ class Bluetooth_comms(th.Thread):
             while not self._stop_event.is_set():
                 self.send()
                 self.receive()
-                print('bl_comms')
-                sleep(1)
         except IOError:
             pass
 
@@ -120,12 +145,10 @@ class Bluetooth_comms(th.Thread):
             pass
 
     def receive(self):
-        try:
-            data = recv_queue.get_nowait()
-            print(data)
-            recv_queue.task_done()
-        except queue.Empty:
-            pass
+        data = self.sock.recv(1024)
+        if len(data) == 0:
+            return
+        recv_queue.put(data)
 
 def start_bluetooth():
     server_sock=BluetoothSocket( RFCOMM )
@@ -156,10 +179,11 @@ if __name__ == '__main__':
     send_queue = queue.Queue()
     recv_queue = queue.Queue()
 
-    bl_comms = Bluetooth_comms(send_queue, recv_queue)
+    bl_comms = Bluetooth_comms(client_sock, send_queue, recv_queue)
 
     text_editor = Text_editor(send_queue, recv_queue)
     text_editor.mainloop()
+    text_editor.quit()
 
     bl_comms.stop()
     bl_comms.join()
