@@ -23,7 +23,6 @@ class Text_window(tk.Text):
         tk.Text.__init__(self, parent)
         self.parent = parent
         self.last_hash = self.get_hash()
-        self.config(undo=True)
 
     def start(self):
         self.set_last()
@@ -63,10 +62,17 @@ class Text_window(tk.Text):
         return out
 
     def text_deleted(self, *args):
-        deleted_char = self.get('insert -1 chars', 'insert')
-        print(now(), "DELETED:", deleted_char)
-        self.delete('insert -1 chars', 'insert')
+        try:
+            _from = self.index('sel.first')
+            _to = self.index('sel.last')
+        except tk.TclError:
+            _from = 'insert -1 chars'
+            _to = 'insert'
+        deleted_char = self.get(_from, _to)
+        print(now(), "DELETED:", deleted_char, self.index(_from), self.index(_to))
+        self.delete(_from, _to)
         return 'break'
+
 
 if __name__ == '__main__':
     program = Text_editor_program()
