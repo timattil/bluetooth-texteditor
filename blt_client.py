@@ -64,6 +64,7 @@ class Text_window(tk.Text):
             out = None
         self.parent.after(10, self.last_written)
         self.set_last()
+        send_queue.put(out)
         return out
 
     def text_deleted(self, *args):
@@ -93,7 +94,7 @@ class Text_window(tk.Text):
         return 'break'
 
 class Bluetooth_comms(th.Thread):
-    def __init__(self, send_queue, recv_queue):
+    def __init__(self, sock, send_queue, recv_queue):
         th.Thread.__init__(self)
         self._stop_event = th.Event()
         self.start()
@@ -103,8 +104,6 @@ class Bluetooth_comms(th.Thread):
             while not self._stop_event.is_set():
                 self.send()
                 self.receive()
-                print('bl_comms')
-                sleep(1)
         except IOError:
             pass
 
@@ -114,8 +113,9 @@ class Bluetooth_comms(th.Thread):
     def send(self):
         try:
             data = send_queue.get_nowait()
-            print(data)
-            send_queue.task_done()
+            if data != None:
+                sock.send(data[0])
+                send_queue.task_done()
         except queue.Empty:
             pass
 
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     send_queue = queue.Queue()
     recv_queue = queue.Queue()
 
-    bl_comms = Bluetooth_comms(send_queue, recv_queue)
+    bl_comms = Bluetooth_comms(sock, send_queue, recv_queue)
 
     text_editor = Text_editor(send_queue, recv_queue)
     text_editor.mainloop()
