@@ -11,13 +11,24 @@ def now():
 class Text_editor(tk.Tk):
     def __init__(self, send_queue, recv_queue):
         tk.Tk.__init__(self)
-        self.text_bouncer = Text_bouncer(self, send_queue, recv_queue)
+        self.send_queue = send_queue
+        self.recv_queue = recv_queue
         self.set_text_window()
+        self.recv()
 
     def set_text_window(self):
         self.text_window = Text_window(self)
         self.text_window.grid()
         self.text_window.start()
+
+    def recv(self):
+        try:
+            data = self.recv_queue.get_nowait()
+            self.text_window.insert('last', data)
+            self.recv_queue.task_done()
+        except queue.Empty:
+            pass
+        self.after(1, self.recv)
 
     def quit(self):
         self.text_bouncer.stop()
@@ -97,25 +108,6 @@ class Text_window(tk.Text):
         self.delete(_from. _to)
         return 'break'
 
-class Text_bouncer(th.Thread):
-    def __init__(self, parent, send_queue, recv_queue):
-        th.Thread.__init__(self)
-        self.parent = parent
-        self._stop_event = th.Event()
-        self.start()
-
-    def run(self):
-        while not self._stop_event.is_set():
-            try:
-                data = recv_queue.get_nowait()
-                self.parent.text_window.insert('last', data)
-                recv_queue.task_done()
-            except queue.Empty:
-                pass
-
-    def stop(self):
-        self._stop_event.set()
-
 class Bluetooth_comms(th.Thread):
     def __init__(self, sock, send_queue, recv_queue):
         th.Thread.__init__(self)
@@ -183,7 +175,6 @@ if __name__ == '__main__':
 
     text_editor = Text_editor(send_queue, recv_queue)
     text_editor.mainloop()
-    text_editor.quit()
 
     bl_comms.stop()
     bl_comms.join()
