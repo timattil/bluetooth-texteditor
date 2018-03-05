@@ -11,12 +11,24 @@ def now():
 class Text_editor(tk.Tk):
     def __init__(self, send_queue, recv_queue):
         tk.Tk.__init__(self)
+        self.send_queue = send_queue
+        self.recv_queue = recv_queue
         self.set_text_window()
+        self.recv()
 
     def set_text_window(self):
         self.text_window = Text_window(self)
         self.text_window.grid()
         self.text_window.start()
+
+    def recv(self):
+        try:
+            data = self.recv_queue.get_nowait()
+            self.text_window.insert('last', data)
+            self.recv_queue.task_done()
+        except queue.Empty:
+            pass
+        self.after(1, self.recv)
 
 class Text_window(tk.Text):
     def __init__(self, parent):
@@ -60,11 +72,11 @@ class Text_window(tk.Text):
         if last_text and self.has_changed():
             out = (last_text, last_index)
             self.last_hash = self.get_hash()
+            send_queue.put(out)
         else:
             out = None
         self.parent.after(10, self.last_written)
         self.set_last()
-        send_queue.put(out)
         return out
 
     def text_deleted(self, *args):
@@ -96,6 +108,9 @@ class Text_window(tk.Text):
 class Bluetooth_comms(th.Thread):
     def __init__(self, sock, send_queue, recv_queue):
         th.Thread.__init__(self)
+        self.sock = sock
+        self.send_queue = send_queue
+        self.recv_queue = recv_queue
         self._stop_event = th.Event()
         self.start()
 
@@ -112,18 +127,18 @@ class Bluetooth_comms(th.Thread):
 
     def send(self):
         try:
-            data = send_queue.get_nowait()
+            data = self.send_queue.get_nowait()
             if data != None:
-                sock.send(data[0])
-                send_queue.task_done()
+                self.sock.send(data[0])
+                self.send_queue.task_done()
         except queue.Empty:
             pass
 
     def receive(self):
         try:
-            data = recv_queue.get_nowait()
+            data = self.recv_queue.get_nowait()
             print(data)
-            recv_queue.task_done()
+            self.recv_queue.task_done()
         except queue.Empty:
             pass
 
