@@ -1,4 +1,5 @@
 import hashlib
+import queue
 import tkinter as tk
 from time import gmtime, strftime
 
@@ -7,18 +8,20 @@ def now():
     return strftime('%H:%M:%S', gmtime())
 
 
-class Text_editor_program(tk.Tk):
-    def __init__(self):
+class TextEditorProgram(tk.Tk):
+    def __init__(self, send_queue, recv_queue):
         tk.Tk.__init__(self)
-        self.set_text_window()
+        self.send_queue = send_queue
+        self.recv_queue = recv_queue
+        self.set_TextWindow()
 
-    def set_text_window(self):
-        self.text_window = Text_window(self)
-        self.text_window.grid()
-        self.text_window.start()
+    def set_TextWindow(self):
+        self.textWindow = TextWindow(self)
+        self.textWindow.grid()
+        self.textWindow.start()
 
 
-class Text_window(tk.Text):
+class TextWindow(tk.Text):
     def __init__(self, parent):
         tk.Text.__init__(self, parent)
         self.parent = parent
@@ -72,6 +75,19 @@ class Text_window(tk.Text):
                 message=out,
                 _type='insert'
             )
+        self.recv()
+
+    def recv(self):
+        try:
+            while True:
+                message = self.parent.recv_queue.get_nowait()
+                index = message.get('index')
+                message_text = message.get('message')
+                if message.get('_type') == 'insert':
+                    self.log('recv', message_text, index=index)
+                    self.insert(index, message_text)
+        except queue.Empty:
+            pass
 
     def text_deleted(self, *args):
         try:
@@ -115,5 +131,7 @@ class Text_window(tk.Text):
 
 
 if __name__ == '__main__':
-    program = Text_editor_program()
+    send_queue = queue.Queue()
+    recv_queue = queue.Queue()
+    program = TextEditorProgram(send_queue, recv_queue)
     program.mainloop()
