@@ -128,8 +128,9 @@ class Bluetooth_comms(th.Thread):
     def send(self):
         try:
             data = self.send_queue.get_nowait()
-            print(data)
-            self.send_queue.task_done()
+            if data != None:
+                self.sock.send(data[0])
+                self.send_queue.task_done()
         except queue.Empty:
             pass
 

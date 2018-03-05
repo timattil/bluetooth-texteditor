@@ -11,7 +11,10 @@ def now():
 class Text_editor(tk.Tk):
     def __init__(self, send_queue, recv_queue):
         tk.Tk.__init__(self)
+        self.send_queue = send_queue
+        self.recv_queue = recv_queue
         self.set_text_window()
+        self.recv()
 
     def set_text_window(self):
         self.text_window = Text_window(self)
