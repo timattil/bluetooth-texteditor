@@ -30,10 +30,6 @@ class Text_editor(tk.Tk):
             pass
         self.after(1, self.recv)
 
-    def quit(self):
-        self.text_bouncer.stop()
-        self.text_bouncer.join()
-
 class Text_window(tk.Text):
     def __init__(self, parent):
         tk.Text.__init__(self, parent)
@@ -76,6 +72,7 @@ class Text_window(tk.Text):
         if last_text and self.has_changed():
             out = (last_text, last_index)
             self.last_hash = self.get_hash()
+            send_queue.put(out)
         else:
             out = None
         self.parent.after(10, self.last_written)
@@ -130,9 +127,9 @@ class Bluetooth_comms(th.Thread):
 
     def send(self):
         try:
-            data = send_queue.get_nowait()
+            data = self.send_queue.get_nowait()
             print(data)
-            send_queue.task_done()
+            self.send_queue.task_done()
         except queue.Empty:
             pass
 
@@ -140,7 +137,7 @@ class Bluetooth_comms(th.Thread):
         data = self.sock.recv(1024)
         if len(data) == 0:
             return
-        recv_queue.put(data)
+        self.recv_queue.put(data)
 
 def start_bluetooth():
     server_sock=BluetoothSocket( RFCOMM )
