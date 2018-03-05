@@ -23,6 +23,7 @@ class Text_window(tk.Text):
         tk.Text.__init__(self, parent)
         self.parent = parent
         self.last_hash = self.get_hash()
+        self.config(undo=False)
 
     def start(self):
         self.set_last()
@@ -72,6 +73,7 @@ class Text_window(tk.Text):
         deleted_char = self.get(_from, _to)
         print(now(), "DELETED:", deleted_char, self.index(_from), self.index(_to))
         self.delete(_from, _to)
+        self.last_hash = self.get_hash()
         return 'break'
 
     def cut_text(self, *args):
@@ -86,6 +88,7 @@ class Text_window(tk.Text):
         self.parent.clipboard_append(deleted_char)
         print(now(), "CUT:", deleted_char, self.index(_from), self.index(_to))
         self.delete(_from, _to)
+        self.last_hash = self.get_hash()
         return 'break'
 
 
