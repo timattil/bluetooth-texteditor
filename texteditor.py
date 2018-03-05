@@ -35,12 +35,18 @@ class Text_window(tk.Text):
         self.mark_set('last', 'insert')
         self.mark_gravity('last', 'left')
 
-    def print_out(func):
-        def wrapped_function(self, *args, **kwargs):
-            text = func(self, *args, **kwargs)
-            if text:
-                print('{}: {}'.format(now(), text))
-        return wrapped_function
+    def log(self, source, message, *args, **kwargs):
+        '''Unified logging for all methods.'''
+        log_message = '{} @ {}: "{}"'.format(now(), source, message)
+        if args:
+            log_message = '{} args:{}'.format(log_message, args)
+        if kwargs:
+            log_message = '{} kwargs:{}'.format(log_message, kwargs)
+        print(log_message)
+
+    def output(self, source, message, _from=None, _to=None, _type=None):
+        '''Stub for the unified output method.'''
+        self.log(source, message, _from=_from, _to=_to, _type=_type)
 
     def get_hash(self):
         return hashlib.md5(self.get('1.0', 'end').encode('utf-8')).digest()
@@ -51,7 +57,6 @@ class Text_window(tk.Text):
         else:
             return False
 
-    @print_out
     def last_written(self):
         last_text = self.get('last', 'insert')
         if last_text and self.has_changed():
@@ -61,7 +66,12 @@ class Text_window(tk.Text):
             out = None
         self.parent.after(10, self.last_written)
         self.set_last()
-        return out
+        if out is not None:
+            self.output(
+                source='last_written',
+                message=out,
+                _type='insert'
+            )
 
     def text_deleted(self, *args):
         try:
@@ -70,8 +80,14 @@ class Text_window(tk.Text):
         except tk.TclError:
             _from = 'insert -1 chars'
             _to = 'insert'
-        deleted_char = self.get(_from, _to)
-        print(now(), "DELETED:", deleted_char, self.index(_from), self.index(_to))
+        deleted_text = self.get(_from, _to)
+        self.output(
+            source='text_deleted',
+            message=deleted_text,
+            _from=self.index(_from),
+            _to=self.index(_to),
+            _type='delete',
+        )
         self.delete(_from, _to)
         self.last_hash = self.get_hash()
         return 'break'
@@ -81,12 +97,18 @@ class Text_window(tk.Text):
             _from = self.index('sel.first')
             _to = self.index('sel.last')
         except tk.TclError:
-            print(now(), 'CUT: no selection.')
+            self.log('cut_text', 'no selection')
             return 'break'
-        deleted_char = self.get(_from, _to)
+        deleted_text = self.get(_from, _to)
         self.parent.clipboard_clear()
-        self.parent.clipboard_append(deleted_char)
-        print(now(), "CUT:", deleted_char, self.index(_from), self.index(_to))
+        self.parent.clipboard_append(deleted_text)
+        self.output(
+            source="cut_text",
+            message=deleted_text,
+            _from=self.index(_from),
+            _to=self.index(_to),
+            _type='delete',
+        )
         self.delete(_from, _to)
         self.last_hash = self.get_hash()
         return 'break'
