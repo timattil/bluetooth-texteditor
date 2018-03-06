@@ -3,7 +3,14 @@ from bluetooth import *
 import threading as th
 import hashlib
 import queue
+import logging
 from time import gmtime, strftime, sleep
+
+"""logging for threads"""
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='(%(threadName)-10s) %(message)s',
+)
 
 def now():
     return strftime('%H:%M:%S', gmtime())
@@ -115,6 +122,7 @@ class Bluetooth_comms(th.Thread):
         self.start()
 
     def run(self):
+        logging.debug('running')
         try:
             while not self._stop_event.is_set():
                 self.send()
