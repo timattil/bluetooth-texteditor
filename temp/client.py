@@ -1,6 +1,7 @@
 from bluetooth import *
 import queue
 import json
+import time
 
 def client(send_queue, recv_queue):
     size = 1024
@@ -8,9 +9,8 @@ def client(send_queue, recv_queue):
     while True:
         try:
             while True:
-                to_send = send_queue.get_nowait()
+                to_send = send_queue.get()
                 s.send(json.dumps(to_send))
-                
         except queue.Empty:
             pass
         """
