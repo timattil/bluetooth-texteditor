@@ -1,7 +1,26 @@
 from bluetooth import *
+import queue
+import json
+
+def client(send_queue, recv_queue):
+    size = 1024
+    s = connect()
+    while True:
+        try:
+            while True:
+                to_send = send_queue.get_nowait()
+                s.send(json.dumps(to_send))
+                
+        except queue.Empty:
+            pass
+        """
+        data = s.recv(size)
+        if data:
+            print(data)
+        """
+    #s.close()
 
 def connect():
-
     addr = None
 
     print("Searching all nearby bluetooth devices for the BLT Host.")
