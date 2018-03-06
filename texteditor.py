@@ -38,7 +38,7 @@ class TextWindow(tk.Text):
         self.mark_set('last', 'insert')
         self.mark_gravity('last', 'left')
 
-    def log(self, source, message, *args, **kwargs):
+    def log(self, source=None, message=None, *args, **kwargs):
         '''Unified logging for all methods.'''
         log_message = '{} @ {}: "{}"'.format(now(), source, message)
         if args:
@@ -49,7 +49,15 @@ class TextWindow(tk.Text):
 
     def output(self, source, message, _from=None, _to=None, _type=None):
         '''Stub for the unified output method.'''
-        self.log(source, message, _from=_from, _to=_to, _type=_type)
+        out = {
+            'source': source,
+            'message': message,
+            '_from': _from,
+            '_to': _to,
+            '_type': _type,
+        }
+        self.log(**out)
+        self.parent.send_queue.put(out)
 
     def get_hash(self):
         return hashlib.md5(self.get('1.0', 'end').encode('utf-8')).digest()
@@ -67,14 +75,15 @@ class TextWindow(tk.Text):
             self.last_hash = self.get_hash()
         else:
             out = None
-        self.parent.after(10, self.last_written)
-        self.set_last()
         if out is not None:
             self.output(
                 source='last_written',
                 message=out,
-                _type='insert'
+                _type='insert',
+                _from=self.index('last'),
             )
+        self.parent.after(10, self.last_written)
+        self.set_last()
         self.recv()
 
     def recv(self):
