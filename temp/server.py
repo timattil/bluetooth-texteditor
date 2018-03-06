@@ -5,29 +5,15 @@ from utils import format_message
 
 def server(send_queue, recv_queue):
     clients = []
-    self.client_thread = threading.Thread(
+    connect_thread = threading.Thread(
             target=connect,
-            args=[clients],
+            args=[clients, recv_queue],
         )
-
-        """
-    size = 1024
-    s = connect()
-    while True:
-        try:
-            while True:
-                to_send = send_queue.get()
-                s.send(json.dumps(to_send))
-        except queue.Empty:
-            pass
-
-        data = s.recv(size)
-        if data:
-            print(data)
-        """
-    #s.close()
+    connect_thread.setDaemon(True)
+    connect_thread.start()
+       
     
-def connect(clients):
+def connect(clients, recv_queue):
     size = 1024
     server_sock=BluetoothSocket( RFCOMM )
     server_sock.bind(("",PORT_ANY))
@@ -50,11 +36,13 @@ def connect(clients):
         client_sock, client_info = server_sock.accept()
         print("Accepted connection from ", client_info)
         clients.append(client_sock)
-        self.client_thread = threading.Thread(
+        client_thread = threading.Thread(
             target=receive,
             args=[client_sock, recv_queue],
         )
-                
+        client_thread.setDaemon(True)
+        client_thread.start()
+        
     except:
         print("Closing socket")
         client_sock.close()
@@ -76,5 +64,3 @@ if __name__ == '__main__':
             target=connect,
             args=[clients],
         )
-    #t_connect = th.Thread(target=connect, args = (clients,))
-    #t_listen = th.Thread()
