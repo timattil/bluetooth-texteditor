@@ -2,7 +2,7 @@ import queue
 import threading
 import tkinter as tk
 from textwindow import TextWindow
-from temp import client
+from temp import client, server
 
 
 class TextEditorProgram(tk.Tk):
@@ -39,6 +39,12 @@ class TextEditorProgram(tk.Tk):
 
     def host_button_command(self):
         print('HOST SELECTED')
+        self.server_thread = threading.Thread(
+            target=server.server,
+            args=[self.send_queue, self.recv_queue],
+        )
+        self.server_thread.setDaemon(True)
+        self.server_thread.start()
         self.disable_buttons()
 
     def disable_buttons(self):
