@@ -1,6 +1,8 @@
 import queue
+import threading
 import tkinter as tk
 from textwindow import TextWindow
+from temp import client
 
 
 class TextEditorProgram(tk.Tk):
@@ -8,11 +10,44 @@ class TextEditorProgram(tk.Tk):
         tk.Tk.__init__(self)
         self.send_queue = send_queue
         self.recv_queue = recv_queue
+        self.set_buttons()
         self.set_TextWindow()
+
+    def set_buttons(self):
+        self.client_button = tk.Button(
+            self,
+            text='CLIENT',
+            command=self.client_button_command,
+        )
+        self.host_button = tk.Button(
+            self,
+            text='HOST',
+            command=self.host_button_command,
+        )
+        self.client_button.grid(row=0, column=0)
+        self.host_button.grid(row=0, column=1)
+
+    def client_button_command(self):
+        print('CLIENT SELECTED')
+        self.client_thread = threading.Thread(
+            target=client.client,
+            args=[self.send_queue, self.recv_queue],
+        )
+        self.client_thread.setDaemon(True)
+        self.client_thread.start()
+        self.disable_buttons()
+
+    def host_button_command(self):
+        print('HOST SELECTED')
+        self.disable_buttons()
+
+    def disable_buttons(self):
+        for button in (self.client_button, self.host_button):
+            button.config(state='disabled')
 
     def set_TextWindow(self):
         self.textWindow = TextWindow(self)
-        self.textWindow.grid()
+        self.textWindow.grid(row=1, column=0, columnspan=2)
         self.textWindow.start()
 
 
