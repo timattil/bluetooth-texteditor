@@ -1,6 +1,7 @@
 from bluetooth import *
 
 def connect():
+
     addr = None
 
     print("Searching all nearby bluetooth devices for the BLT Host.")
@@ -26,10 +27,15 @@ def connect():
     return sock
     
 if __name__ == '__main__':
+    size = 1024
     s = connect()
     while True:
         text = input()
         if text == "quit":
             break
         s.send(bytes(text, 'UTF-8'))
+        data = s.recv(size)
+        if data:
+            print(data)
+            
     s.close()
