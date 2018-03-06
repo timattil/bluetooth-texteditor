@@ -1,5 +1,5 @@
 from bluetooth import *
-import threading as th
+import threading
 import json
 from utils import format_message
 
