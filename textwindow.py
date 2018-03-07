@@ -80,9 +80,14 @@ class TextWindow(tk.Text):
                 _from = message.get('_from')
                 _to = message.get('_to')
                 message_text = message.get('message')
-                if message.get('_type') == 'insert':
-                    self.log('recv', message_text, _from=_from, _to=_to)
+                _type = message.get('_type')
+                self.log('recv', message_text, _from=_from, _to=_to, _type=_type)
+                if _type == 'insert':
                     self.insert(_from, message_text)
+                elif _type == 'delete':
+                    self.delete(_from, _to)
+                else:
+                    self.log('recv', 'Could not handle message type.', _type=_type)
         except queue.Empty:
             pass
 
