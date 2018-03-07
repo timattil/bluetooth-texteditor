@@ -1,5 +1,7 @@
 from bluetooth import *
 import threading
+import json
+from utils import format_message
 
 class Host():
     def __init__(self, send_queue, recv_queue):
@@ -52,15 +54,17 @@ class Host():
         while True:
             data = self.send_queue.get()
             for client_sock in client_socks:
-                client_sock.send(data)
+                client_sock.send(json.dumps(data))
             self.send_queue.task_done()
 
     def receive(self, sock):
         while True:
-            print('received data')
             data = sock.recv(1024)
             if data:
-                self.recv_queue.put(data)
+                string_data = data.decode('utf-8')
+                print(string_data)
+                formatted_data = format_message(string_data)
+                self.recv_queue.put(formatted_data)
 
 
 class Client():
@@ -105,11 +109,14 @@ class Client():
     def send(self):
         while True:
             data = self.send_queue.get()
-            self.sock.send(data)
+            self.sock.send(json.dumps(data))
             self.send_queue.task_done()
 
     def receive(self):
         while True:
             data = self.sock.recv(1024)
             if data:
-                self.recv_queue.put(data)
+                string_data = data.decode('utf-8')
+                print(string_data)
+                formatted_data = format_message(string_data)
+                self.recv_queue.put(formatted_data)
