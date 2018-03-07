@@ -14,7 +14,6 @@ def server(send_queue, recv_queue):
        
     
 def connect(clients, recv_queue):
-    size = 1024
     server_sock=BluetoothSocket( RFCOMM )
     server_sock.bind(("",PORT_ANY))
     server_sock.listen(1)
@@ -49,11 +48,13 @@ def connect(clients, recv_queue):
         server_sock.close()
 
 def receive(client_sock, recv_queue):
+    size = 1024
     while True:
         data = client_sock.recv(size)
         if data:
-            print(data)
-            received = format_message(data)
+            string_data = data.decode('utf-8')
+            print(string_data)
+            received = format_message(string_data)
             recv_queue.put(received)
         
 if __name__ == '__main__':
