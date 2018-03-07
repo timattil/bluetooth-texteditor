@@ -28,24 +28,24 @@ def connect(clients, recv_queue):
                        profiles = [ SERIAL_PORT_PROFILE ],
     #                   protocols = [ OBEX_UUID ]
                         )
+    while True:
+        print("Waiting for connection on RFCOMM channel %d" % port)
 
-    print("Waiting for connection on RFCOMM channel %d" % port)
-
-    try:
-        client_sock, client_info = server_sock.accept()
-        print("Accepted connection from ", client_info)
-        clients.append(client_sock)
-        client_thread = threading.Thread(
-            target=receive,
-            args=[client_sock, recv_queue],
-        )
-        client_thread.setDaemon(True)
-        client_thread.start()
-        
-    except:
-        print("Closing socket")
-        client_sock.close()
-        server_sock.close()
+        try:
+            client_sock, client_info = server_sock.accept()
+            print("Accepted connection from ", client_info)
+            clients.append(client_sock)
+            client_thread = threading.Thread(
+                target=receive,
+                args=[client_sock, recv_queue],
+            )
+            client_thread.setDaemon(True)
+            client_thread.start()
+            
+        except:
+            print("Closing socket")
+            client_sock.close()
+            server_sock.close()
 
 def receive(client_sock, recv_queue):
     size = 1024
