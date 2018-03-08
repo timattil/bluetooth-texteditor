@@ -84,14 +84,14 @@ class Client():
         self.recv_thread.start()
 
     def connect(self):
-        print("Searching all nearby bluetooth devices for the BLT Host.")
+        print('Searching all nearby bluetooth devices for the BLT Host.')
 
-        uuid = "94f39d29-7d6d-437d-973b-fba39e49d4ee"
+        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee'
         addr = None
         service_matches = find_service( uuid = uuid, address = addr )
 
         if len(service_matches) == 0:
-            print("Couldn't find the BLT Host =(")
+            print('Couldn\'t find the BLT Host =(')
             sys.exit(0)
 
         first_match = service_matches[0]
@@ -99,11 +99,11 @@ class Client():
         name = first_match["name"]
         host = first_match["host"]
 
-        print("Connecting to \"%s\" on %s" % (name, host))
+        print('Connecting to \'%s\' on %s' % (name, host))
 
         sock = BluetoothSocket( RFCOMM )
         sock.connect((host, port))
-        print("Connected")
+        print('Connected')
         return sock
 
     def send(self):

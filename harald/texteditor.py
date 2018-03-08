@@ -3,7 +3,6 @@ import threading
 import tkinter as tk
 from textwindow import TextWindow
 import harald
-from temp import client, server
 
 
 class TextEditorProgram(tk.Tk):
