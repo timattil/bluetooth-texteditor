@@ -20,6 +20,7 @@ class TextWindow(tk.Text):
         self.last_written()
         self.bind('<BackSpace>', self.text_deleted)
         self.bind('<Control-x>', self.cut_text)
+        self.last_selected_indexes = self.get_selected_indexes()
 
     def set_last(self):
         self.mark_set('last', 'insert')
@@ -60,6 +61,7 @@ class TextWindow(tk.Text):
         if last_text and self.has_changed():
             out = last_text
             self.last_hash = self.get_hash()
+            self.check_selection_written_over()
         else:
             out = None
         if out is not None:
@@ -71,7 +73,38 @@ class TextWindow(tk.Text):
             )
         self.parent.after(10, self.last_written)
         self.set_last()
+        self.set_last_selected_indexes()
         self.recv()
+
+    def check_selection_written_over(self):
+        '''
+        Check if previously selected text has been written over.
+        Run this when new text is written, as then it's possible to write over.
+        '''
+        current_indexes = self.get_selected_indexes()
+        changes_in_indexes = current_indexes != self.last_selected_indexes
+        if changes_in_indexes:
+            # selected text has been written over!
+            _from, _to = self.last_selected_indexes
+            self.output(
+                source='selection_written_over',
+                message=None,
+                _from=_from,
+                _to=_to,
+                _type='delete',
+                )
+
+    def get_selected_indexes(self):
+        try:
+            _from = self.index('sel.first')
+            _to = self.index('sel.last')
+            selected_indexes = (_from, _to)
+        except tk.TclError:
+            selected_indexes = None
+        return selected_indexes
+
+    def set_last_selected_indexes(self):
+        self.last_selected_indexes = self.get_selected_indexes()
 
     def recv(self):
         try:
@@ -92,10 +125,10 @@ class TextWindow(tk.Text):
             pass
 
     def text_deleted(self, *args):
-        try:
-            _from = self.index('sel.first')
-            _to = self.index('sel.last')
-        except tk.TclError:
+        selected_indexes = self.get_selected_indexes()
+        if selected_indexes is not None:
+            _from, _to = selected_indexes
+        else:
             _from = 'insert -1 chars'
             _to = 'insert'
         deleted_text = self.get(_from, _to)
@@ -111,10 +144,10 @@ class TextWindow(tk.Text):
         return 'break'
 
     def cut_text(self, *args):
-        try:
-            _from = self.index('sel.first')
-            _to = self.index('sel.last')
-        except tk.TclError:
+        selected_indexes = self.get_selected_indexes()
+        if selected_indexes is not None:
+            _from, _to = selected_indexes
+        else:
             self.log('cut_text', 'no selection')
             return 'break'
         deleted_text = self.get(_from, _to)
