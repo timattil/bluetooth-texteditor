@@ -72,9 +72,9 @@ class TextWindow(tk.Text):
                 _from=self.index('last'),
             )
         self.parent.after(10, self.last_written)
-        self.set_last()
         self.set_last_selected_indexes()
         self.recv()
+        self.set_last()
 
     def check_selection_written_over(self):
         '''
