@@ -121,6 +121,7 @@ class TextWindow(tk.Text):
                     self.delete(_from, _to)
                 else:
                     self.log('recv', 'Could not handle message type.', _type=_type)
+                self.last_hash = self.get_hash()
         except queue.Empty:
             pass
 
