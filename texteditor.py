@@ -2,16 +2,20 @@ import queue
 import threading
 import tkinter as tk
 from textwindow import TextWindow
-from temp import client, server
-
+#from temp import client, server
+from harald import harald
 
 class TextEditorProgram(tk.Tk):
     def __init__(self, send_queue, recv_queue):
         tk.Tk.__init__(self)
         self.send_queue = send_queue
         self.recv_queue = recv_queue
+        self.set_harald(send_queue, recv_queue)
         self.set_buttons()
         self.set_TextWindow()
+
+    def set_harald(self, send_queue, recv_queue):
+        self.harald = harald.Harald(send_queue, recv_queue)
 
     def set_buttons(self):
         self.client_button = tk.Button(
@@ -29,22 +33,12 @@ class TextEditorProgram(tk.Tk):
 
     def client_button_command(self):
         print('CLIENT SELECTED')
-        self.client_thread = threading.Thread(
-            target=client.client,
-            args=[self.send_queue, self.recv_queue],
-        )
-        self.client_thread.setDaemon(True)
-        self.client_thread.start()
+        self.harald.start_client()
         self.disable_buttons()
 
     def host_button_command(self):
         print('HOST SELECTED')
-        self.server_thread = threading.Thread(
-            target=server.server,
-            args=[self.send_queue, self.recv_queue],
-        )
-        self.server_thread.setDaemon(True)
-        self.server_thread.start()
+        self.harald.start_host()
         self.disable_buttons()
 
     def disable_buttons(self):

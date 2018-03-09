@@ -2,88 +2,70 @@ from bluetooth import *
 import threading
 import json
 from utils import format_message
+import queue
 
-class Host():
+class Harald():
     def __init__(self, send_queue, recv_queue):
         self.send_queue = send_queue
         self.recv_queue = recv_queue
+        self.socket_recv_queue = queue.Queue()
+        self.socket_send_queue = queue.Queue()
         self.client_socks = []
-        self.connect_thread = threading.Thread(
-            target=self.connect,
-            args=[self.client_socks]
-        )
-        self.connect_thread.setDaemon(True)
-        self.connect_thread.start()
-        self.send_thread = threading.Thread(
-            target=self.send,
-            args=[self.client_socks],
-        )
-        self.send_thread.setDaemon(True)
-        self.send_thread.start()
+        self.host_sock = None # If sock here, then we in Client mode!
+        self.start_update_loop()
 
-    def connect(self, client_socks):
-        server_sock = BluetoothSocket(RFCOMM)
-        server_sock.bind(('', PORT_ANY))
-        server_sock.listen(1)
-
-        port = server_sock.getsockname()[1]
-
-        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee'
-        name = 'BLT Host'
-
-        advertise_service(server_sock,
-                          name,
-                          service_id = uuid,
-                          service_classes = [ uuid, SERIAL_PORT_CLASS ],
-                          profiles = [ SERIAL_PORT_PROFILE ])
-
-        print('Advertising service on RFCOMM channel %d' % port)
-
-        while True:
-            client_sock, client_info = server_sock.accept()
-            print('Accepted connection from ', client_info)
-            client_socks.append(client_sock)
-            client_thread = threading.Thread(
-                target=self.receive,
-                args=[client_sock],
+    def start_update_loop(self):
+        self.update_loop_thread = threading.Thread(
+            target=self.update_loop,
             )
-            client_thread.setDaemon(True)
-            client_thread.start()
+        self.update_loop_thread.setDaemon(True)
+        self.update_loop_thread.start()
 
-    def send(self, client_socks):
+    def update_loop(self):
         while True:
-            data = self.send_queue.get()
-            for client_sock in client_socks:
-                client_sock.send(json.dumps(data))
-            self.send_queue.task_done()
+            self.handle_socket_receive()
+            self.handle_socket_send()
 
-    def receive(self, sock):
-        while True:
-            data = sock.recv(1024)
-            if data:
-                string_data = data.decode('utf-8')
-                print(string_data)
-                formatted_data = format_message(string_data)
-                self.recv_queue.put(formatted_data)
+    def handle_socket_receive(self):
+        try:
+            while True:
+                rcv_msg = self.socket_recv_queue.get(True, 0.01)
+                # HERE CAN BE LOGIC FOR HANDLING RECEIVED MESSGES
+                # 1: Ordering of messages
+                # 2: Listen thread in case of crash?
+                self.recv_queue.put(rcv_msg)
+        except queue.Empty:
+            pass
 
+    def handle_socket_send(self):
+        try:
+            while True:
+                msg = self.send_queue.get(True, 0.01)
+                formatted_msg = json.dumps(msg)
+                if self.host_sock:
+                    self.host_sock.send(formatted_msg)
+                    continue # In theory, this is probably useless
+                for client in self.client_socks:
+                    client.send(formatted_msg)
+        except queue.Empty:
+            pass
 
-class Client():
-    def __init__(self, send_queue, recv_queue):
-        self.send_queue = send_queue
-        self.recv_queue = recv_queue
-        self.sock = self.connect()
-        self.send_thread = threading.Thread(
-            target=self.send
-        )
-        self.send_thread.setDaemon(True)
-        self.send_thread.start()
-        self.recv_thread = threading.Thread(
-            target=self.receive
-        )
-        self.recv_thread.setDaemon(True)
-        self.recv_thread.start()
+    def start_host(self):
+        self.advertise_thread = threading.Thread(
+            target=self.advertise,
+            args=[self.client_socks],
+            )
+        self.advertise_thread.setDaemon(True)
+        self.advertise_thread.start()
 
-    def connect(self):
+    def start_client(self):
+        self.client_thread = threading.Thread(
+            target=self.client_connect
+            )
+        self.client_thread.setDaemon(True)
+        self.client_thread.start()
+
+    def client_connect(self):
         print('Searching all nearby bluetooth devices for the BLT Host.')
 
         uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee'
@@ -104,19 +86,44 @@ class Client():
         sock = BluetoothSocket( RFCOMM )
         sock.connect((host, port))
         print('Connected')
-        return sock
+        self.host_sock = sock
+        # Start receiving data from host in this thread!
+        self.receive(sock)
 
-    def send(self):
-        while True:
-            data = self.send_queue.get()
-            self.sock.send(json.dumps(data))
-            self.send_queue.task_done()
+    def advertise(self, client_socks):
+        server_sock = BluetoothSocket(RFCOMM)
+        server_sock.bind(('', PORT_ANY))
+        server_sock.listen(1)
 
-    def receive(self):
+        port = server_sock.getsockname()[1]
+
+        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee'
+        name = 'BLT Host'
+
+        advertise_service(server_sock,
+                          name,
+                          service_id = uuid,
+                          service_classes = [ uuid, SERIAL_PORT_CLASS ],
+                          profiles = [ SERIAL_PORT_PROFILE ])
+
+        print('Advertising service on RFCOMM port %d' % port)
+
         while True:
-            data = self.sock.recv(1024)
+            client_sock, client_info = server_sock.accept()
+            print('Accepted connection from ', client_info)
+            client_socks.append(client_sock)
+            client_thread = threading.Thread(
+                target=self.receive,
+                args=[client_sock],
+            )
+            client_thread.setDaemon(True)
+            client_thread.start()
+
+    def receive(self, sock):
+        while True:
+            data = sock.recv(1024)
             if data:
                 string_data = data.decode('utf-8')
-                print(string_data)
+                print("Harald received:", string_data)
                 formatted_data = format_message(string_data)
-                self.recv_queue.put(formatted_data)
+                self.socket_recv_queue.put(formatted_data)
