@@ -30,8 +30,8 @@ class TextWindow(tk.Text):
         self.insert(args[0], args[1])
 
     def mydelete(self, *args):
-        _from = self.index('insert')
-        _to = self.index('insert-1c')
+        _from = self.index('insert-1c')
+        _to = self.index('insert')
         self.output(
             source='mydelete',
             message=None,
@@ -50,7 +50,7 @@ class TextWindow(tk.Text):
             log_message = '{} kwargs:{}'.format(log_message, kwargs)
         print(log_message)
     
-    def output(self, source, message, _from=None, _to=None, _type=None):
+    def output(self, source, message, _from=None, _to=None, _type=None, _order=None):
         '''Stub for the unified output method.'''
         out = {
             'source': source,
@@ -58,6 +58,7 @@ class TextWindow(tk.Text):
             '_from': _from,
             '_to': _to,
             '_type': _type,
+            '_order': _order
         }
         self.log(**out)
         self.parent.send_queue.put(out)
@@ -70,7 +71,8 @@ class TextWindow(tk.Text):
                 _to = message.get('_to')
                 message_text = message.get('message')
                 _type = message.get('_type')
-                self.log('recv', message_text, _from=_from, _to=_to, _type=_type)
+                _order = message.get('_order')
+                self.log('recv', message_text, _from=_from, _to=_to, _type=_type, _order=_order)
                 if _type == 'insert':
                     self.insert(_from, message_text)
                 elif _type == 'delete':

@@ -2,7 +2,7 @@ import queue
 import threading
 import tkinter as tk
 from textwindow2 import TextWindow
-from harald import harald
+from harald import harald2
 
 class TextEditorProgram(tk.Tk):
     def __init__(self, send_queue, recv_queue):
