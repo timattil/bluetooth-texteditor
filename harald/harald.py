@@ -6,6 +6,7 @@ import queue
 
 class Harald():
     def __init__(self, send_queue, recv_queue):
+        self.password = None
         self.send_queue = send_queue
         self.recv_queue = recv_queue
         self.socket_recv_queue = queue.Queue()
@@ -13,6 +14,10 @@ class Harald():
         self.client_socks = []
         self.host_sock = None # If sock here, then we in Client mode!
         self.start_update_loop()
+
+    def set_password(self, _password):
+        self.password = _password
+        print('Password: %s' % self.password)
 
     def start_update_loop(self):
         self.update_loop_thread = threading.Thread(
@@ -66,14 +71,14 @@ class Harald():
         self.client_thread.start()
 
     def client_connect(self):
-        print('Searching all nearby bluetooth devices for the BLT Host.')
+        print('Searching all nearby bluetooth devices for the Host')
 
         uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee'
         addr = None
         service_matches = find_service( uuid = uuid, address = addr )
 
         if len(service_matches) == 0:
-            print('Couldn\'t find the BLT Host =(')
+            print('Couldn\'t find the Host =(')
             sys.exit(0)
 
         first_match = service_matches[0]
@@ -98,7 +103,7 @@ class Harald():
         port = server_sock.getsockname()[1]
 
         uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee'
-        name = 'BLT Host'
+        name = 'Host'
 
         advertise_service(server_sock,
                           name,
