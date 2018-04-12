@@ -28,7 +28,7 @@ class TextWindow(tk.Text):
             _type=args[0],
             _order=None,
         )
-        self.insert(args[0], args[1])
+        #self.insert(args[0], args[1])
 
     def mydelete(self, *args):
         _from = self.index('insert-1c')
@@ -41,7 +41,7 @@ class TextWindow(tk.Text):
             _type='delete',
             _order=None,
         )
-        self.delete(args[0])
+        #self.delete(args[0])
     
     def log(self, source=None, message=None, *args, **kwargs):
         '''Unified logging for all methods.'''

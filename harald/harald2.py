@@ -14,6 +14,7 @@ class Harald():
         self.client_socks = []
         self.host_sock = None # If sock here, then we in Client mode!
         self.order_counter = 0
+        self.next_order = 0
         self.start_update_loop()
 
     def set_password(self, _password):
@@ -40,11 +41,16 @@ class Harald():
                 # 2: Listen thread in case of crash?
                 rcv_msg = self.socket_recv_queue.get(True, 0.01)
                 if self.host_sock:
-                    self.recv_queue.put(rcv_msg)
+                    if rcv_msg['_order'] == next_order:
+                        next_order += 1
+                        self.recv_queue.put(rcv_msg)
+                    else:
+                        print("order fucked up")
                 else:
                     rcv_msg['_order'] = self.order_counter
-                    self.order_counter = self.order_counter + 1
+                    self.order_counter += 1
                     self.recv_queue.put(rcv_msg)
+                    formatted_msg = json.dumps(rcv_msg)
                     for client in self.client_socks:
                         client.send(formatted_msg)
         except queue.Empty:
@@ -58,8 +64,10 @@ class Harald():
                 if self.host_sock:
                     self.host_sock.send(formatted_msg)
                     continue # In theory, this is probably useless
-                for client in self.client_socks:
-                    client.send(formatted_msg)
+                else:
+                    self.socket_recv_queue.put(msg)
+                    #for client in self.client_socks:
+                    #    client.send(formatted_msg)
         except queue.Empty:
             pass
 
@@ -137,6 +145,6 @@ class Harald():
             data = sock.recv(1024)
             if data:
                 string_data = data.decode('utf-8')
-                print("Harald received:", string_data)
+                #print("Harald received:", string_data)
                 formatted_data = format_message(string_data)
                 self.socket_recv_queue.put(formatted_data)
