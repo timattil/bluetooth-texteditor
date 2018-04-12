@@ -15,7 +15,7 @@ class TextEditorProgram(tk.Tk):
         self.set_TextWindow()
 
     def set_harald(self, send_queue, recv_queue):
-        self.harald = harald.Harald(send_queue, recv_queue)
+        self.harald = harald2.Harald(send_queue, recv_queue)
 
     def set_buttons(self):
         self.client_button = tk.Button(

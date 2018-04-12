@@ -35,13 +35,18 @@ class Harald():
     def handle_socket_receive(self):
         try:
             while True:
-                rcv_msg = self.socket_recv_queue.get(True, 0.01)
                 # HERE CAN BE LOGIC FOR HANDLING RECEIVED MESSGES
                 # 1: Ordering of messages
                 # 2: Listen thread in case of crash?
-                rcv_msg['_order'] = order_counter
-                order_counter = order_counter + 1
-                self.recv_queue.put(rcv_msg)
+                rcv_msg = self.socket_recv_queue.get(True, 0.01)
+                if self.host_sock:
+                    self.recv_queue.put(rcv_msg)
+                else:
+                    rcv_msg['_order'] = self.order_counter
+                    self.order_counter = self.order_counter + 1
+                    self.recv_queue.put(rcv_msg)
+                    for client in self.client_socks:
+                        client.send(formatted_msg)
         except queue.Empty:
             pass
 

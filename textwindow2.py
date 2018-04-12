@@ -26,6 +26,7 @@ class TextWindow(tk.Text):
             _from=_from,
             _to=_to,
             _type=args[0],
+            _order=None,
         )
         self.insert(args[0], args[1])
 
@@ -38,6 +39,7 @@ class TextWindow(tk.Text):
             _from=_from,
             _to=_to,
             _type='delete',
+            _order=None,
         )
         self.delete(args[0])
     
@@ -58,7 +60,7 @@ class TextWindow(tk.Text):
             '_from': _from,
             '_to': _to,
             '_type': _type,
-            '_order': _order
+            '_order': _order,
         }
         self.log(**out)
         self.parent.send_queue.put(out)
