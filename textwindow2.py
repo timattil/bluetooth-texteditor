@@ -30,11 +30,13 @@ class TextWindow(tk.Text):
         self.insert(args[0], args[1])
 
     def mydelete(self, *args):
+        _from = self.index('insert')
+        _to = self.index('insert-1c')
         self.output(
             source='mydelete',
             message=None,
-            _from=args[0],
-            _to=None,
+            _from=_from,
+            _to=_to,
             _type='delete',
         )
         self.delete(args[0])
@@ -75,7 +77,6 @@ class TextWindow(tk.Text):
                     self.delete(_from, _to)
                 else:
                     self.log('recv', 'Could not handle message type.', _type=_type)
-                self.last_hash = self.get_hash()
         except queue.Empty:
             pass
         self.parent.after(10, self.recv)
