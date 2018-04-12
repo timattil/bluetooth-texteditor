@@ -62,7 +62,7 @@ class TextWindow(tk.Text):
             '_type': _type,
             '_order': _order,
         }
-        self.log(**out)
+        #self.log(**out)
         self.parent.send_queue.put(out)
 
     def recv(self):

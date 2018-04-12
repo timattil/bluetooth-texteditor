@@ -41,8 +41,8 @@ class Harald():
                 # 2: Listen thread in case of crash?
                 rcv_msg = self.socket_recv_queue.get(True, 0.01)
                 if self.host_sock:
-                    if rcv_msg['_order'] == next_order:
-                        next_order += 1
+                    if rcv_msg['_order'] == self.next_order:
+                        self.next_order += 1
                         self.recv_queue.put(rcv_msg)
                     else:
                         print("order fucked up")
