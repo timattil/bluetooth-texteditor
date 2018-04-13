@@ -77,8 +77,8 @@ class TextWindow(tk.Text):
                 _type = message.get('_type')
                 _order = message.get('_order')
                 self.log('recv', message_text, _from=_from, _to=_to, _type=_type, _order=_order)
-                if _order == next_order:
-                    next_order += 1
+                if _order == self.next_order:
+                    self.next_order += 1
                     if _type == 'insert':
                         self.insert(_from, message_text)
                     elif _type == 'delete':
