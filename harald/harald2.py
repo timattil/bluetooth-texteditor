@@ -45,7 +45,7 @@ class Harald():
                         self.next_order += 1
                         self.recv_queue.put(rcv_msg)
                     else:
-                        print("order fucked up")
+                        print("Order messed in Harald!")
                 else:
                     rcv_msg['_order'] = self.order_counter
                     self.order_counter += 1

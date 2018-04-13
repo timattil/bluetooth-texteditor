@@ -14,6 +14,8 @@ class TextWindow(tk.Text):
         self.insert = self.redirector.register("insert", self.myinsert)
         self.delete = self.redirector.register("delete", self.mydelete)
         self.parent = parent
+        self.order_counter = 0
+        self.next_order = 0
         self.config(undo=False)
         self.recv()
 
@@ -75,12 +77,16 @@ class TextWindow(tk.Text):
                 _type = message.get('_type')
                 _order = message.get('_order')
                 self.log('recv', message_text, _from=_from, _to=_to, _type=_type, _order=_order)
-                if _type == 'insert':
-                    self.insert(_from, message_text)
-                elif _type == 'delete':
-                    self.delete(_from, _to)
+                if _order == next_order:
+                    next_order += 1
+                    if _type == 'insert':
+                        self.insert(_from, message_text)
+                    elif _type == 'delete':
+                        self.delete(_from, _to)
+                    else:
+                        self.log('recv', 'Could not handle message type.', _type=_type)
                 else:
-                    self.log('recv', 'Could not handle message type.', _type=_type)
+                    print("Order messed in textwindow!")
         except queue.Empty:
             pass
         self.parent.after(10, self.recv)
