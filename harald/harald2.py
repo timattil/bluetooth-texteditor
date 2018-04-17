@@ -107,13 +107,14 @@ class Harald():
         sock = BluetoothSocket( RFCOMM )
         sock.connect((host, port))
         print('Authenticating')
-        if self.ask_access(host_sock):
+        if self.ask_access(sock):
             # Start receiving data from host in this thread!
             print('Access granted, connected to Host')
             self.host_sock = sock
             self.receive(sock)
         else:
             print('Host denied access')
+            sock.close()
 
     def advertise(self, client_socks):
         server_sock = BluetoothSocket(RFCOMM)
@@ -159,7 +160,7 @@ class Harald():
 
     def ask_access(self, sock):
         msg = {
-            'source': "authenticate",
+            'source': "ask_access",
             'message': self.password,
             '_from': None,
             '_to': None,
@@ -179,11 +180,21 @@ class Harald():
                     return True
                 else:
                     break
+
+        failed_msg = {
+            'source': "ask_access",
+            'message': "denied",
+            '_from': None,
+            '_to': None,
+            '_type': "authentication",
+            '_order': None,
+        }
+        self.socket_recv_queue.put(failed_msg)
         return False
 
     def give_access(self, sock):
         msg = {
-            'source': "authenticate",
+            'source': "give_access",
             'message': None,
             '_from': None,
             '_to': None,

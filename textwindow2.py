@@ -81,6 +81,8 @@ class TextWindow(tk.Text):
                         self.insert(_from, message_text)
                     elif _type == 'delete':
                         self.delete(_from, _to)
+                    elif _type == 'authentication' and message_text == 'denied':
+                        self.parent.enable_buttons()
                     else:
                         self.log('recv', 'Could not handle message type.', _type=_type)
                 else:

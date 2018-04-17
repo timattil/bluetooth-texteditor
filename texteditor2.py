@@ -57,6 +57,10 @@ class TextEditorProgram(tk.Tk):
         for button in (self.client_button, self.host_button):
             button.config(state='disabled')
 
+    def enable_buttons(self):
+        for button in (self.client_button, self.host_button):
+            button.config(state='enabled')
+
     def set_TextWindow(self):
         self.textWindow = TextWindow(self)
         self.textWindow.grid(row=1, column=0, columnspan=16)
