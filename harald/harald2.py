@@ -108,8 +108,11 @@ class Harald():
         sock.connect((host, port))
         print('Connected')
         self.host_sock = sock
-        # Start receiving data from host in this thread!
-        self.receive(sock)
+        if ask_access(host_sock):
+            # Start receiving data from host in this thread!
+            self.receive(sock)
+        else:
+            print('Host denied access')
 
     def advertise(self, client_socks):
         server_sock = BluetoothSocket(RFCOMM)
@@ -131,14 +134,18 @@ class Harald():
 
         while True:
             client_sock, client_info = server_sock.accept()
-            print('Accepted connection from ', client_info)
-            client_socks.append(client_sock)
-            client_thread = threading.Thread(
-                target=self.receive,
-                args=[client_sock],
-            )
-            client_thread.setDaemon(True)
-            client_thread.start()
+            if give_access(client_sock):
+                print('Accepted connection from ', client_info)
+                client_socks.append(client_sock)
+                client_thread = threading.Thread(
+                    target=self.receive,
+                    args=[client_sock],
+                )
+                client_thread.setDaemon(True)
+                client_thread.start()
+            else:
+                client_sock.close()
+                print('Denied connection from ', client_info)
 
     def receive(self, sock):
         while True:
@@ -148,3 +155,49 @@ class Harald():
                 #print("Harald received:", string_data)
                 formatted_data = format_message(string_data)
                 self.socket_recv_queue.put(formatted_data)
+
+    def ask_access(self, sock):
+        msg = {
+            'source': "authenticate",
+            'message': self.password,
+            '_from': None,
+            '_to': None,
+            '_type': "authentication",
+            '_order': None,
+        }
+
+        formatted_msg = json.dumps(msg)
+        self.host_sock.send(formatted_msg)
+
+        while True:
+            data = sock.recv(1024)
+            if data:
+                string_data = data.decode('utf-8')
+                formatted_data = format_message(string_data)
+                if data.get("_type") == "authentication" & data.get("message") == "granted":
+                    return True
+                else:
+                    return False
+
+    def give_access(self, sock):
+        msg = {
+            'source': "authenticate",
+            'message': None,
+            '_from': None,
+            '_to': None,
+            '_type': "authentication",
+            '_order': None,
+        }
+
+        while True:
+            data = sock.recv(1024)
+            if data:
+                string_data = data.decode('utf-8')
+                formatted_data = format_message(string_data)
+                if data.get("_type") == "authentication" & data.get("message") == self.password:
+                    msg["message"] = "granted"
+                    formatted_msg = json.dumps(msg)
+                    self.sock.send(formatted_msg)
+                    return True
+                else:
+                    return False
