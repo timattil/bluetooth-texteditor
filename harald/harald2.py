@@ -19,7 +19,6 @@ class Harald():
 
     def set_password(self, _password):
         self.password = _password
-        print('Password: %s' % self.password)
 
     def start_update_loop(self):
         self.update_loop_thread = threading.Thread(
@@ -165,7 +164,7 @@ class Harald():
             '_from': None,
             '_to': None,
             '_type': "authentication",
-            '_order': None,
+            '_order': 0,
         }
 
         formatted_msg = json.dumps(msg)
@@ -187,9 +186,9 @@ class Harald():
             '_from': None,
             '_to': None,
             '_type': "authentication",
-            '_order': None,
+            '_order': 0,
         }
-        self.socket_recv_queue.put(failed_msg)
+        self.recv_queue.put(failed_msg)
         return False
 
     def give_access(self, sock):

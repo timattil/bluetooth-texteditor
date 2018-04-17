@@ -76,10 +76,11 @@ class TextWindow(tk.Text):
                 _order = message.get('_order')
                 self.log('recv', message_text, _from=_from, _to=_to, _type=_type, _order=_order)
                 if _order == self.next_order:
-                    self.next_order += 1
                     if _type == 'insert':
+                        self.next_order += 1
                         self.insert(_from, message_text)
                     elif _type == 'delete':
+                        self.next_order += 1
                         self.delete(_from, _to)
                     elif _type == 'authentication' and message_text == 'denied':
                         self.parent.enable_buttons()

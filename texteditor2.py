@@ -59,7 +59,7 @@ class TextEditorProgram(tk.Tk):
 
     def enable_buttons(self):
         for button in (self.client_button, self.host_button):
-            button.config(state='enabled')
+            button.config(state='normal')
 
     def set_TextWindow(self):
         self.textWindow = TextWindow(self)
