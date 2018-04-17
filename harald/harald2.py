@@ -106,10 +106,11 @@ class Harald():
 
         sock = BluetoothSocket( RFCOMM )
         sock.connect((host, port))
-        print('Connected')
-        self.host_sock = sock
-        if ask_access(host_sock):
+        print('Authenticating')
+        if self.ask_access(host_sock):
             # Start receiving data from host in this thread!
+            print('Access granted, connected to Host')
+            self.host_sock = sock
             self.receive(sock)
         else:
             print('Host denied access')
@@ -134,7 +135,7 @@ class Harald():
 
         while True:
             client_sock, client_info = server_sock.accept()
-            if give_access(client_sock):
+            if self.give_access(client_sock):
                 print('Accepted connection from ', client_info)
                 client_socks.append(client_sock)
                 client_thread = threading.Thread(
@@ -167,17 +168,18 @@ class Harald():
         }
 
         formatted_msg = json.dumps(msg)
-        self.host_sock.send(formatted_msg)
+        sock.send(formatted_msg)
 
-        while True:
+        for ticks in range(0, 1000):
             data = sock.recv(1024)
             if data:
                 string_data = data.decode('utf-8')
                 formatted_data = format_message(string_data)
-                if data.get("_type") == "authentication" & data.get("message") == "granted":
+                if formatted_data.get("_type") == "authentication" and formatted_data.get("message") == "granted":
                     return True
                 else:
-                    return False
+                    break
+        return False
 
     def give_access(self, sock):
         msg = {
@@ -194,10 +196,10 @@ class Harald():
             if data:
                 string_data = data.decode('utf-8')
                 formatted_data = format_message(string_data)
-                if data.get("_type") == "authentication" & data.get("message") == self.password:
+                if formatted_data.get("_type") == "authentication" and formatted_data.get("message") == self.password:
                     msg["message"] = "granted"
                     formatted_msg = json.dumps(msg)
-                    self.sock.send(formatted_msg)
+                    sock.send(formatted_msg)
                     return True
                 else:
                     return False
