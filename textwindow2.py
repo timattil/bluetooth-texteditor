@@ -14,10 +14,10 @@ class TextWindow(tk.Text):
         self.insert = self.redirector.register("insert", self.myinsert)
         self.delete = self.redirector.register("delete", self.mydelete)
         self.parent = parent
-        self.order_counter = 0
-        self.next_order = 0
         self.config(undo=False)
+        self.load_cache()
         self.recv()
+        self.save_cache()
 
     def myinsert(self, *args):
         _from = self.index('insert')
@@ -75,19 +75,26 @@ class TextWindow(tk.Text):
                 _type = message.get('_type')
                 _order = message.get('_order')
                 self.log('recv', message_text, _from=_from, _to=_to, _type=_type, _order=_order)
-                if _order == self.next_order:
-                    if _type == 'insert':
-                        self.next_order += 1
-                        self.insert(_from, message_text)
-                    elif _type == 'delete':
-                        self.next_order += 1
-                        self.delete(_from, _to)
-                    elif _type == 'authentication' and message_text == 'denied':
-                        self.parent.enable_buttons()
-                    else:
-                        self.log('recv', 'Could not handle message type.', _type=_type)
+                if _type == 'insert':
+                    self.insert(_from, message_text)
+                elif _type == 'delete':
+                    self.delete(_from, _to)
+                elif _type == 'authentication' and message_text == 'denied':
+                    self.parent.enable_buttons()
                 else:
-                    print("Order messed in textwindow!")
+                    self.log('recv', 'Could not handle message type.', _type=_type)
         except queue.Empty:
             pass
         self.parent.after(10, self.recv)
+
+    def save_cache(self):
+        all_text = self.get('1.0', 'end-2c')
+        with open('cache.txt', 'w') as text_file:
+            print(all_text, file=text_file)
+        self.parent.after(1000, self.save_cache)
+
+    def load_cache(self):
+        with open('cache.txt', 'r') as text_file:
+            cached_text = text_file.read()
+            cached_text = cached_text.rstrip('\r\n') # save_cache() adds a newline to the cached text
+            self.insert('1.0', cached_text)
