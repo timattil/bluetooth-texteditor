@@ -74,11 +74,15 @@ class TextWindow(tk.Text):
                 message_text = message.get('message')
                 _type = message.get('_type')
                 _order = message.get('_order')
-                self.log('recv', message_text, _from=_from, _to=_to, _type=_type, _order=_order)
+                self.log('recv', repr(message_text), _from=_from, _to=_to, _type=_type, _order=_order)
                 if _type == 'insert':
                     self.insert(_from, message_text)
                 elif _type == 'delete':
                     self.delete(_from, _to)
+                elif _type == 'sync_request':
+                    self.send_all_text()
+                elif _type == 'sync_response':
+                    self.receive_all_text(message_text)
                 elif _type == 'authentication' and message_text == 'denied':
                     self.parent.enable_buttons()
                 else:
@@ -87,8 +91,23 @@ class TextWindow(tk.Text):
             pass
         self.parent.after(10, self.recv)
 
+    def send_all_text(self):
+        all_text = self.get('1.0', 'end-1c')
+        self.output(
+            source='send_whole_text',
+            message=all_text,
+            _from=None,
+            _to=None,
+            _type='sync_response',
+            _order=None,
+        )
+
+    def receive_all_text(self, all_text):
+        self.delete('1.0', 'end-1c')
+        self.insert('1.0', all_text)
+
     def save_cache(self):
-        all_text = self.get('1.0', 'end-2c')
+        all_text = self.get('1.0', 'end-1c')
         with open('cache.txt', 'w') as text_file:
             print(all_text, file=text_file)
         self.parent.after(1000, self.save_cache)
@@ -96,5 +115,5 @@ class TextWindow(tk.Text):
     def load_cache(self):
         with open('cache.txt', 'r') as text_file:
             cached_text = text_file.read()
-            cached_text = cached_text.rstrip('\r\n') # save_cache() adds a newline to the cached text
+            cached_text = cached_text.rstrip('\n') # save_cache() adds a newline to the cached text
             self.insert('1.0', cached_text)

@@ -15,6 +15,7 @@ class Harald():
         self.host_sock = None # If sock here, then we in Client mode!
         self.order_counter = 0
         self.next_order = 0
+        self.synchronizing = False
         self.start_update_loop()
 
     def set_password(self, _password):
@@ -35,23 +36,36 @@ class Harald():
     def handle_socket_receive(self):
         try:
             while True:
-                # HERE CAN BE LOGIC FOR HANDLING RECEIVED MESSGES
-                # 1: Ordering of messages
-                # 2: Listen thread in case of crash?
                 rcv_msg = self.socket_recv_queue.get(True, 0.01)
+                # IF CLIENT
                 if self.host_sock:
-                    if rcv_msg['_order'] == self.next_order:
-                        self.next_order += 1
+                    if synchronizing:
+                        if rcv_msg['_type'] == 'sync_response':
+                            print('Synchronized!')
+                            self.next_order = rcv_msg['_order'] + 1
+                            self.recv_queue.put(rcv_msg)
+                            synchronizing = False
+                        else:
+                            continue
+                    else:
+                        if rcv_msg['_order'] == self.next_order:
+                            self.next_order += 1
+                            self.recv_queue.put(rcv_msg)
+                        else:
+                            print("Order messed up. Synchronizing with Host.")
+                            synchronizing = True
+                            self.send_sync_request()
+                # IF HOST
+                else:
+                    if rcv_msg['_type'] == 'sync_request':
                         self.recv_queue.put(rcv_msg)
                     else:
-                        print("Order messed in Harald!")
-                else:
-                    rcv_msg['_order'] = self.order_counter
-                    self.order_counter += 1
-                    self.recv_queue.put(rcv_msg)
-                    formatted_msg = json.dumps(rcv_msg)
-                    for client in self.client_socks:
-                        client.send(formatted_msg)
+                        rcv_msg['_order'] = self.order_counter
+                        self.order_counter += 1
+                        self.recv_queue.put(rcv_msg)
+                        formatted_msg = json.dumps(rcv_msg)
+                        for client in self.client_socks:
+                            client.send(formatted_msg)
         except queue.Empty:
             pass
 
@@ -65,8 +79,6 @@ class Harald():
                     continue # In theory, this is probably useless
                 else:
                     self.socket_recv_queue.put(msg)
-                    #for client in self.client_socks:
-                    #    client.send(formatted_msg)
         except queue.Empty:
             pass
 
@@ -164,7 +176,7 @@ class Harald():
             '_from': None,
             '_to': None,
             '_type': "authentication",
-            '_order': 0,
+            '_order': None,
         }
 
         formatted_msg = json.dumps(msg)
@@ -186,7 +198,7 @@ class Harald():
             '_from': None,
             '_to': None,
             '_type': "authentication",
-            '_order': 0,
+            '_order': None,
         }
         self.recv_queue.put(failed_msg)
         return False
@@ -213,3 +225,17 @@ class Harald():
                     return True
                 else:
                     return False
+
+    def send_sync_request():
+        print("synchronizing")
+        sync_request = {
+            'source': 'send_sync_request',
+            'message': 'SYNCHRONIZE WITH ME',
+            '_from': None,
+            '_to': None,
+            '_type': 'sync_request',
+            '_order': None,
+        }
+
+        formatted_sync_request = json.dumps(sync_request)
+        sock.send(formatted_sync_request)
