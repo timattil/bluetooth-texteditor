@@ -39,12 +39,12 @@ class Harald():
                 rcv_msg = self.socket_recv_queue.get(True, 0.01)
                 # IF CLIENT
                 if self.host_sock:
-                    if synchronizing:
+                    if self.synchronizing:
                         if rcv_msg['_type'] == 'sync_response':
                             print('Synchronized!')
                             self.next_order = rcv_msg['_order'] + 1
                             self.recv_queue.put(rcv_msg)
-                            synchronizing = False
+                            self.synchronizing = False
                         else:
                             continue
                     else:
@@ -53,7 +53,7 @@ class Harald():
                             self.recv_queue.put(rcv_msg)
                         else:
                             print("Order messed up. Synchronizing with Host.")
-                            synchronizing = True
+                            self.synchronizing = True
                             self.send_sync_request()
                 # IF HOST
                 else:
@@ -65,7 +65,12 @@ class Harald():
                         self.recv_queue.put(rcv_msg)
                         formatted_msg = json.dumps(rcv_msg)
                         for client in self.client_socks:
-                            client.send(formatted_msg)
+                            try:
+                                client.send(formatted_msg)
+                            except OSError:
+                                print('Lost connection to a Client. Removing Client from list.')
+                                client.close()
+                                self.client_socks.remove(client)
         except queue.Empty:
             pass
 
@@ -162,12 +167,17 @@ class Harald():
 
     def receive(self, sock):
         while True:
-            data = sock.recv(1024)
-            if data:
-                string_data = data.decode('utf-8')
-                #print("Harald received:", string_data)
-                formatted_data = format_message(string_data)
-                self.socket_recv_queue.put(formatted_data)
+            try:
+                data = sock.recv(1024)
+                if data:
+                    string_data = data.decode('utf-8')
+                    #print("Harald received:", string_data)
+                    formatted_data = format_message(string_data)
+                    self.socket_recv_queue.put(formatted_data)
+            except OSError:
+                print('Lost connection to a Client. Closing this Client thread.')
+                sock.close()
+                return
 
     def ask_access(self, sock):
         msg = {
@@ -226,8 +236,7 @@ class Harald():
                 else:
                     return False
 
-    def send_sync_request():
-        print("synchronizing")
+    def send_sync_request(self):
         sync_request = {
             'source': 'send_sync_request',
             'message': 'SYNCHRONIZE WITH ME',
@@ -238,4 +247,4 @@ class Harald():
         }
 
         formatted_sync_request = json.dumps(sync_request)
-        sock.send(formatted_sync_request)
+        self.host_sock.send(formatted_sync_request)
