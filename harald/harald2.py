@@ -86,6 +86,8 @@ class Harald():
                     self.socket_recv_queue.put(msg)
         except queue.Empty:
             pass
+        except OSError:
+            print('Lost connection to Host.')
 
     def start_host(self):
         self.advertise_thread = threading.Thread(
@@ -175,7 +177,10 @@ class Harald():
                     formatted_data = format_message(string_data)
                     self.socket_recv_queue.put(formatted_data)
             except OSError:
-                print('Lost connection to a Client. Closing this Client thread.')
+                if self.host_sock:
+                    print('Lost connection to Host. Closing this receive thread.')
+                else:
+                    print('Lost connection to a Client. Closing this receive thread.')
                 sock.close()
                 return
 
