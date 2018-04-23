@@ -15,7 +15,7 @@ class Harald():
         self.host_sock = None # If sock here, then we in Client mode!
         self.order_counter = 0
         self.next_order = 0
-        self.synchronized = False
+        self.synchronizing = False
         self.start_update_loop()
 
     def set_password(self, _password):
@@ -39,12 +39,12 @@ class Harald():
                 rcv_msg = self.socket_recv_queue.get(True, 0.01)
                 # IF CLIENT
                 if self.host_sock:
-                    if not self.synchronized:
+                    if self.synchronizing:
                         if rcv_msg['_type'] == 'sync_response':
                             print('Synchronized!')
                             self.next_order = rcv_msg['_order'] + 1
                             self.recv_queue.put(rcv_msg)
-                            self.synchronized = True
+                            self.synchronizing = False
                         else:
                             continue
                     else:
@@ -53,7 +53,7 @@ class Harald():
                             self.recv_queue.put(rcv_msg)
                         else:
                             print("Order messed up. Synchronizing with Host.")
-                            self.synchronized = False
+                            self.synchronizing = True
                             self.send_sync_request()
                 # IF HOST
                 else:
