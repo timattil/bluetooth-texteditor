@@ -83,6 +83,8 @@ class TextWindow(tk.Text):
                     self.send_all_text()
                 elif _type == 'sync_response':
                     self.receive_all_text(message_text)
+                elif _type == 'connection' and message_text == 'lost':
+                    self.parent.enable_buttons()
                 elif _type == 'authentication' and message_text == 'denied':
                     self.parent.enable_buttons()
                 else:

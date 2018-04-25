@@ -1,7 +1,16 @@
-Moro t‰‰ll‰ client
+Kaljaa
+Kaljaa
 
-No moro, t‰‰ll‰ Host!
+99
+98
+97
+96
+95
+94
+93
+92
+91
 
-Liss‰‰ tavaraa
+Client voi nyt alottaa Hostaamisen uudestaan:
 
-Miten mennee?
+Joo, ja ex-Host voi liitty‰ uudestaan Clienttina.

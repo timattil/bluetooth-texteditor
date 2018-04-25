@@ -99,8 +99,10 @@ class Harald():
             pass
         except OSError:
             print('Lost connection to Host.')
+            self.lost_host()
 
     def start_host(self):
+        self.host_sock = None
         self.advertise_thread = threading.Thread(
             target=self.advertise,
             args=[self.client_socks],
@@ -109,6 +111,7 @@ class Harald():
         self.advertise_thread.start()
 
     def start_client(self):
+        self.synchronizing = True
         self.client_thread = threading.Thread(
             target=self.client_connect
             )
@@ -213,6 +216,18 @@ class Harald():
                     print('Lost connection to a Client. Closing this receive thread.')
                 sock.close()
                 return
+
+    def lost_host(self):
+        self.host_sock = None
+        msg = {
+            'source': "lost_host",
+            'message': "lost",
+            '_from': None,
+            '_to': None,
+            '_type': "connection",
+            '_order': None,
+        }
+        self.recv_queue.put(msg)
 
     def ask_access(self, sock):
         '''
