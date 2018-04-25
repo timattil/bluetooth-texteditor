@@ -16,7 +16,7 @@ class Harald():
         self.host_sock = None # If sock here, then we in Client mode!
         self.order_counter = 0
         self.next_order = 0
-        self.synchronizing = False
+        self.synchronizing = True
         self.start_update_loop()
 
     def set_group(self, _group):
@@ -38,6 +38,9 @@ class Harald():
             self.handle_socket_send()
 
     def handle_socket_receive(self):
+        '''
+        This does quite a few things.
+        '''
         try:
             while True:
                 rcv_msg = self.socket_recv_queue.get(True, 0.01)
@@ -79,13 +82,17 @@ class Harald():
             pass
 
     def handle_socket_send(self):
+        '''
+        Clients send data from TextEditor to Host.
+        Host sends data from TextEditor to its own socket_recv_queue, as if it was another message.
+        This way Host handles (puts in order) all messages equally, even its own messages.
+        '''
         try:
             while True:
                 msg = self.send_queue.get(True, 0.01)
                 formatted_msg = json.dumps(msg)
                 if self.host_sock:
                     self.host_sock.send(formatted_msg)
-                    continue # In theory, this is probably useless
                 else:
                     self.socket_recv_queue.put(msg)
         except queue.Empty:
@@ -109,6 +116,9 @@ class Harald():
         self.client_thread.start()
 
     def client_connect(self):
+        '''
+        Client searches and connects to Host using this.
+        '''
         print('Searching all nearby bluetooth devices for the Host')
 
         uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
@@ -148,6 +158,9 @@ class Harald():
             sock.close()
 
     def advertise(self, client_socks):
+        '''
+        This continuously advertises Host's service and takes in new clients.
+        '''
         server_sock = BluetoothSocket(RFCOMM)
         server_sock.bind(('', PORT_ANY))
         server_sock.listen(1)
@@ -176,11 +189,15 @@ class Harald():
                 )
                 client_thread.setDaemon(True)
                 client_thread.start()
+                self.send_sync_command()
             else:
                 client_sock.close()
                 print('Denied connection from ', client_info)
 
     def receive(self, sock):
+        '''
+        This listens to receiving socket all the time.
+        '''
         while True:
             try:
                 data = sock.recv(1024)
@@ -198,6 +215,10 @@ class Harald():
                 return
 
     def ask_access(self, sock):
+        '''
+        Client sends access request to Host and waits for response.
+        Client notifies TextEditor if access is denied.
+        '''
         msg = {
             'source': "ask_access",
             'message': self.password,
@@ -232,6 +253,9 @@ class Harald():
         return False
 
     def give_access(self, sock):
+        '''
+        Host responds to client request IF passwords match.
+        '''
         msg = {
             'source': "give_access",
             'message': None,
@@ -255,6 +279,10 @@ class Harald():
                     return False
 
     def send_sync_request(self):
+        '''
+        Client sends Host a sync request.
+        This is used when Client realizes it is confused.
+        '''
         sync_request = {
             'source': 'send_sync_request',
             'message': 'SYNCHRONIZE WITH ME',
@@ -266,3 +294,19 @@ class Harald():
 
         formatted_sync_request = json.dumps(sync_request)
         self.host_sock.send(formatted_sync_request)
+
+    def send_sync_command(self):
+        '''
+        Host sends itself a sync request to force clients to sync.
+        This is used when a new client joins the group.
+        '''
+        sync_command = {
+            'source': 'send_sync_command',
+            'message': 'SYNCHRONIZE WITH ME',
+            '_from': None,
+            '_to': None,
+            '_type': 'sync_request',
+            '_order': None,
+        }
+
+        self.recv_queue.put(sync_command)
