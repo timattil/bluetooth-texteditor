@@ -55,6 +55,7 @@ class TextEditorProgram(tk.Tk):
             print('Group or password missing!')
             return
         print('Starting as Client')
+        self.harald.set_group(group)
         self.harald.set_password(password)
         self.harald.start_client()
         self.disable_buttons()
@@ -67,6 +68,7 @@ class TextEditorProgram(tk.Tk):
             print('Group or password missing!')
             return
         print('Starting as Host')
+        self.harald.set_group(group)
         self.harald.set_password(password)
         self.harald.start_host()
         self.disable_buttons()

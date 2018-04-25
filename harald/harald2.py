@@ -19,6 +19,9 @@ class Harald():
         self.synchronizing = False
         self.start_update_loop()
 
+    def set_group(self, _group):
+        self.group = _group
+
     def set_password(self, _password):
         self.password = _password
 
@@ -108,7 +111,7 @@ class Harald():
     def client_connect(self):
         print('Searching all nearby bluetooth devices for the Host')
 
-        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee-' + self.group
+        uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
         addr = None
         service_matches = find_service( uuid = uuid, address = addr )
 
@@ -116,10 +119,19 @@ class Harald():
             print('Couldn\'t find the Host =(')
             sys.exit(0)
 
-        first_match = service_matches[0]
-        port = first_match["port"]
-        name = first_match["name"]
-        host = first_match["host"]
+        perfect_match = None
+        for match in service_matches:
+            if match['name'].decode('utf-8') == 'Host of ' + self.group:
+                perfect_match = match
+                break
+
+        if perfect_match is None:
+            print('Couldn\'t find the Host of ' + self.group)
+            sys.exit(0)
+
+        port = perfect_match['port']
+        name = perfect_match['name'].decode('utf-8')
+        host = perfect_match['host']
 
         print('Connecting to \'%s\' on %s' % (name, host))
 
@@ -142,8 +154,8 @@ class Harald():
 
         port = server_sock.getsockname()[1]
 
-        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee-' + self.group
-        name = 'Host'
+        uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
+        name = 'Host of ' + self.group
 
         advertise_service(server_sock,
                           name,
