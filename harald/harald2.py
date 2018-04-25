@@ -6,6 +6,7 @@ import queue
 
 class Harald():
     def __init__(self, send_queue, recv_queue):
+        self.group = None
         self.password = None
         self.send_queue = send_queue
         self.recv_queue = recv_queue
@@ -107,7 +108,7 @@ class Harald():
     def client_connect(self):
         print('Searching all nearby bluetooth devices for the Host')
 
-        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee'
+        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee-' + self.group
         addr = None
         service_matches = find_service( uuid = uuid, address = addr )
 
@@ -141,7 +142,7 @@ class Harald():
 
         port = server_sock.getsockname()[1]
 
-        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee'
+        uuid = '94f39d29-7d6d-437d-973b-fba39e49d4ee-' + self.group
         name = 'Host'
 
         advertise_service(server_sock,
