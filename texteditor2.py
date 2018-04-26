@@ -29,8 +29,14 @@ class TextEditorProgram(tk.Tk):
             text='Host',
             command=self.host_button_command,
         )
+        self.stop_button = tk.Button(
+            self,
+            text='Stop',
+            command=self.stop_button_command,
+        )
         self.client_button.grid(row=0, column=4, rowspan=2)
         self.host_button.grid(row=0, column=6, rowspan=2)
+        self.stop_button.grid(row=0, column=14, rowspan=2)
 
     def set_group_field(self):
         self.group_label = tk.Label(self, text='Group:')
@@ -70,6 +76,9 @@ class TextEditorProgram(tk.Tk):
         self.harald.set_password(password)
         self.harald.start_host()
         self.disable_buttons()
+
+    def stop_button_command(self):
+        self.harald.stop()
 
     def disable_buttons(self):
         for button in (self.client_button, self.host_button):

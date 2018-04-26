@@ -109,7 +109,6 @@ class Harald():
             print('Lost connection to Host.')
             self.lost_host()
     
-    
     def socket_send_msg(self, formatted_msg):
         '''
         This handles >1024 byte messages use always and only with receive
@@ -139,11 +138,15 @@ class Harald():
     def start_client(self):
         self.synchronizing = True
         self.should_stop_hosting = True
+
         self.client_thread = threading.Thread(
             target=self.client_connect
             )
         self.client_thread.setDaemon(True)
         self.client_thread.start()
+
+    def stop(self):
+        print('Sorry. If you wish to stop, you must implement it. :)')
 
     def client_connect(self):
         '''
@@ -193,33 +196,6 @@ class Harald():
         else:
             print('Host denied access')
             sock.close()
-
-    def check_others(self):
-        while True:
-            print('Checking if there are other Hosts')
-
-            uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
-            addr = None
-            service_matches = find_service( uuid = uuid, address = addr )
-
-            if len(service_matches) == 0:
-                print('No other Hosts found')
-
-            else:
-                for match in service_matches:
-                    match_name = match['name'].decode('utf-8').split(' ')
-                    match_group = ' '.join(match_name[:-2])
-                    match_date = match_name[-2:-1][0]
-                    match_time = match_name[-1:][0]
-                    parsed = match_date + ' ' + match_time
-                    datetime = parser.parse(parsed)
-                    if match_group == self.group:
-                        if self.own_datetime > datetime:
-                            print('Found earlier Host: ' + match['host'])
-                            self.should_stop_hosting = True
-                            self.start_client()
-                        else:
-                            print('Found later Host ' + match['host'])
 
     def advertise(self, client_socks):
         '''
@@ -319,19 +295,36 @@ class Harald():
                 sock.close()
                 return
 
+    def check_others(self):
+        while True:
+            print('Checking if there are other Hosts')
+
+            uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
+            addr = None
+            service_matches = find_service( uuid = uuid, address = addr )
+
+            if len(service_matches) == 0:
+                print('No other Hosts found')
+
+            else:
+                for match in service_matches:
+                    match_name = match['name'].decode('utf-8').split(' ')
+                    match_group = ' '.join(match_name[:-2])
+                    match_date = match_name[-2:-1][0]
+                    match_time = match_name[-1:][0]
+                    parsed = match_date + ' ' + match_time
+                    datetime = parser.parse(parsed)
+                    if match_group == self.group:
+                        if self.own_datetime > datetime:
+                            print('Found earlier Host: ' + match['host'])
+                            self.should_stop_hosting = True
+                            self.start_client()
+                        else:
+                            print('Found later Host ' + match['host'])
+
     def lost_host(self):
+        print('Host lost. Starting as new Host.')
         self.host_sock = None
-        '''
-        msg = {
-            'source': "lost_host",
-            'message': "lost",
-            '_from': None,
-            '_to': None,
-            '_type': "connection",
-            '_order': None,
-        }
-        self.recv_queue.put(msg)
-        '''
         self.start_host()
 
     def ask_access(self, sock):
