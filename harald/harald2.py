@@ -92,7 +92,7 @@ class Harald():
                 msg = self.send_queue.get(True, 0.01)
                 formatted_msg = json.dumps(msg)
                 if self.host_sock:
-                    self.host_sock.send(formatted_msg)
+                    socket_send_msg(formatted_msg)
                 else:
                     self.socket_recv_queue.put(msg)
         except queue.Empty:
@@ -101,6 +101,14 @@ class Harald():
             print('Lost connection to Host.')
             self.lost_host()
 
+    def socket_send_msg(self, formatted_msg):
+        '''
+        This handles >1024 byte messages use always and only with receive
+        '''
+        header = "HAR" + str(len(formatted_msg)) + "ALD"
+        msg_header = header.encode()
+        self.host_sock.send(msg_header + formatted_msg)
+    
     def start_host(self):
         self.host_sock = None
         self.advertise_thread = threading.Thread(
@@ -225,12 +233,31 @@ class Harald():
         '''
         while True:
             try:
-                data = sock.recv(1024)
-                if data:
-                    string_data = data.decode('utf-8')
-                    #print("Harald received:", string_data)
-                    formatted_data = format_message(string_data)
-                    self.socket_recv_queue.put(formatted_data)
+                msg = ""
+                whole_msg_recvd = False
+                remaining = -1 # -1 for unknown
+                while whole_msg_recvd == False:
+                    data = sock.recv(1024)
+                    # The problem might be if header is found from the end of previous message due latency. TODO test for that
+                    if data:
+                        string_data = data.decode('utf-8')
+                        if (remaining == -1):
+                            header_end = string_data.index('ALD') + len("ALD")
+                            header = string_data[:header_end-1]
+                            msg = string_data[header_end:]
+                            msg_length = int(header[len("HAR"):-len("ALD")])
+                            remaining = msg_length - 1024 + len(header)
+                        else:
+                            msg += string_data
+                            remaining = remaining - 1024
+                            
+                        if remaining <= 0:
+                            formatted_data = format_message(msg)
+                            self.socket_recv_queue.put(formatted_data)
+                            whole_msg_recvd = True
+
+                        #print("Harald received:", string_data)
+
             except OSError:
                 if self.host_sock:
                     print('Lost connection to Host. Closing this receive thread.')
@@ -330,7 +357,8 @@ class Harald():
         }
 
         formatted_sync_request = json.dumps(sync_request)
-        self.host_sock.send(formatted_sync_request)
+        socket_send_msg(formatted_sync_request)
+        #self.host_sock.send(formatted_sync_request)
 
     def send_sync_command(self):
         '''
