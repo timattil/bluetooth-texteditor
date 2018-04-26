@@ -96,7 +96,7 @@ class Harald():
                 msg = self.send_queue.get(True, 0.01)
                 formatted_msg = json.dumps(msg)
                 if self.host_sock:
-                    socket_send_msg(formatted_msg)
+                    self.socket_send_msg(formatted_msg)
                 else:
                     self.socket_recv_queue.put(msg)
         except queue.Empty:
@@ -368,7 +368,7 @@ class Harald():
         }
 
         formatted_sync_request = json.dumps(sync_request)
-        socket_send_msg(formatted_sync_request)
+        self.socket_send_msg(formatted_sync_request)
         #self.host_sock.send(formatted_sync_request)
 
     def send_sync_command(self):
