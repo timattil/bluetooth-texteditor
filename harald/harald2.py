@@ -20,6 +20,7 @@ class Harald():
         self.next_order = 0
         self.synchronizing = True
         self.own_datetime = None
+        self.should_stop_hosting = False
         self.start_update_loop()
 
     def set_group(self, _group):
@@ -120,6 +121,8 @@ class Harald():
     
     def start_host(self):
         self.host_sock = None
+        self.should_stop_hosting = False
+
         self.advertise_thread = threading.Thread(
             target=self.advertise,
             args=[self.client_socks],
@@ -135,6 +138,7 @@ class Harald():
 
     def start_client(self):
         self.synchronizing = True
+        self.should_stop_hosting = True
         self.client_thread = threading.Thread(
             target=self.client_connect
             )
@@ -211,7 +215,11 @@ class Harald():
                     datetime = parser.parse(parsed)
                     if match_group == self.group:
                         if self.own_datetime > datetime:
-                            print('Found an earlier Host: ' + match['host'])
+                            print('Found earlier Host: ' + match['host'])
+                            self.should_stop_hosting = True
+                            self.start_client()
+                        else:
+                            print('Found later Host ' + match['host'])
 
     def advertise(self, client_socks):
         '''
@@ -237,6 +245,8 @@ class Harald():
         print('Advertising service on RFCOMM port %d' % port)
 
         while True:
+            if self.should_stop_hosting:
+                return
             client_sock, client_info = server_sock.accept()
             if self.give_access(client_sock):
                 print('Accepted connection from ', client_info)
@@ -311,6 +321,7 @@ class Harald():
 
     def lost_host(self):
         self.host_sock = None
+        '''
         msg = {
             'source': "lost_host",
             'message': "lost",
@@ -320,6 +331,8 @@ class Harald():
             '_order': None,
         }
         self.recv_queue.put(msg)
+        '''
+        self.start_host()
 
     def ask_access(self, sock):
         '''
