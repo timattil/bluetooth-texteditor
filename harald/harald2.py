@@ -251,7 +251,7 @@ class Harald():
                             header_end = string_data.index('ALD') + len("ALD")
                             header = string_data[:header_end-1]
                             msg = string_data[header_end:]
-                            msg_length = int(header[len("HAR"):-len("ALD")])
+                            msg_length = int(header[len("HAR"):-(len("ALD")-1)]
                             print('GOT', string_data)
                             print('Message Length', msg_length)
                             remaining = msg_length - 1024 + len(header)
