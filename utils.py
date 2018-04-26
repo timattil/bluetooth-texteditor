@@ -18,6 +18,7 @@ def format_message(message_string_json):
         raise ValueError('Input is not in correct JSON format: "{}"'.format(message_string_json)) from None
     return message_dict
 
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

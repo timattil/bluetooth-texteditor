@@ -71,9 +71,13 @@ class Harald():
                         self.order_counter += 1
                         self.recv_queue.put(rcv_msg)
                         formatted_msg = json.dumps(rcv_msg)
+                        header = "HAR" + str(len(formatted_msg)) + "ALD"
+                        #header_formatted_msg = header.encode()
+                        header_formatted_msg = header + formatted_msg
+                        
                         for client in self.client_socks:
                             try:
-                                client.send(formatted_msg)
+                                client.send(header_formatted_msg)
                             except OSError:
                                 print('Lost connection to a Client. Removing Client from list.')
                                 client.close()
@@ -100,14 +104,16 @@ class Harald():
         except OSError:
             print('Lost connection to Host.')
             self.lost_host()
-
+    
+    
     def socket_send_msg(self, formatted_msg):
         '''
         This handles >1024 byte messages use always and only with receive
         '''
         header = "HAR" + str(len(formatted_msg)) + "ALD"
-        msg_header = header.encode()
-        self.host_sock.send(msg_header + formatted_msg)
+        #header_formatted_msg = header.encode()
+        header_formatted_msg = header + formatted_msg
+        self.host_sock.send(header_formatted_msg)
     
     def start_host(self):
         self.host_sock = None
