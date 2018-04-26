@@ -252,12 +252,17 @@ class Harald():
                             header = string_data[:header_end-1]
                             msg = string_data[header_end:]
                             msg_length = int(header[len("HAR"):-len("ALD")])
+                            print('GOT', string_data)
+                            print('Message Length', msg_length)
                             remaining = msg_length - 1024 + len(header)
+                            print('remaining', remaining)
                         else:
                             msg += string_data
                             remaining = remaining - 1024
+                            print('add text - remaining', remaining)
                             
                         if remaining <= 0:
+                            print('GOT whole message, remaining', remaining)
                             formatted_data = format_message(msg)
                             self.socket_recv_queue.put(formatted_data)
                             whole_msg_recvd = True
