@@ -249,16 +249,20 @@ class Harald():
                         string_data = data.decode('utf-8')
                         if (remaining == -1):
                             try:
-                                header_end = string_data.index('ALD') + len("ALD")
+                                header_end_index = string_data.find('ALD', 0, 20)
+                                if header_end_index == -1: 
+                                    print("Header error: message lost You should not see this message")
+                                    break;
+                                header_end = header_end_index + len("ALD")
+                                header = string_data[:header_end-1]
+                                msg = string_data[header_end:]
+                                msg_length = int(header[len("HAR"):-(len("ALD")-1)])
+                                remaining = msg_length - 1024 + len(header)
                             except ValueError as e:
                                 print(e)
                                 print("message lost")
                                 break
                                 
-                            header = string_data[:header_end-1]
-                            msg = string_data[header_end:]
-                            msg_length = int(header[len("HAR"):-(len("ALD")-1)])
-                            remaining = msg_length - 1024 + len(header)
                         else:
                             msg += string_data
                             remaining = remaining - 1024
