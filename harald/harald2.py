@@ -3,6 +3,8 @@ import threading
 import json
 from utils import format_message
 import queue
+import datetime
+from dateutil import parser
 
 class Harald():
     def __init__(self, send_queue, recv_queue):
@@ -153,10 +155,17 @@ class Harald():
             sys.exit(0)
 
         perfect_match = None
+        earliest = None
         for match in service_matches:
-            if match['name'].decode('utf-8') == 'Host of ' + self.group:
-                perfect_match = match
-                break
+            match_name = match['name'].decode('utf-8').split(' ')
+            match_group = match_name[:-2]
+            match_date = match_name[-2:-1][0]
+            match_time = match_name[-1:][0]
+            parsed = match_date + ' ' + match_time
+            datetime = parser.parse(parsed)
+            if match_name == self.group:
+                if earliest == None or earliest > datetime:
+                    perfect_match = match
 
         if perfect_match is None:
             print('Couldn\'t find the Host of ' + self.group)
@@ -193,7 +202,9 @@ class Harald():
 
             else:
                 for match in service_matches:
-                    if match['name'].decode('utf-8') == 'Host of ' + self.group:
+                    match_name = match['name'].decode('utf-8').split(' ')
+                    match_group = match_name[:-2]
+                    if match_group == self.group:
                         print('Found another Host: ' + match['host'])
 
     def advertise(self, client_socks):
@@ -207,7 +218,9 @@ class Harald():
         port = server_sock.getsockname()[1]
 
         uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
-        name = 'Host of ' + self.group
+
+        host_datetime = datetime.datetime.utcnow()
+        name = self.group + ' ' + str(host_datetime)
 
         advertise_service(server_sock,
                           name,
@@ -236,6 +249,7 @@ class Harald():
     def receive(self, sock):
         '''
         This listens to receiving socket all the time.
+        Large messages > 1024 bytes come in multiple messages, so those are handled aswell.
         '''
         while True:
             try:

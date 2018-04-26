@@ -21,19 +21,22 @@ class TextWindow(tk.Text):
 
     def myinsert(self, *args):
         _from = self.index('insert')
-        _to = self.index('last')
         self.output(
             source='myinsert',
             message=args[1],
             _from=_from,
-            _to=_to,
+            _to=None,
             _type=args[0],
             _order=None,
         )
 
     def mydelete(self, *args):
-        _from = self.index('insert-1c')
-        _to = self.index('insert')
+        selected_indexes = self.get_selected_indexes()
+        if selected_indexes is not None:
+            _from, _to = selected_indexes
+        else:
+            _from = self.index('insert -1 chars')
+            _to = self.index('insert')
         self.output(
             source='mydelete',
             message=None,
@@ -42,6 +45,17 @@ class TextWindow(tk.Text):
             _type='delete',
             _order=None,
         )
+
+    def get_selected_indexes(self):
+        try:
+            _from = self.index('sel.first')
+            _to = self.index('sel.last')
+            selected_indexes = (_from, _to)
+        except tk.TclError:
+            selected_indexes = None
+        if _from == '' or _to == '':
+            selected_indexes = None
+        return selected_indexes
     
     def log(self, source=None, message=None, *args, **kwargs):
         '''Unified logging for all methods.'''

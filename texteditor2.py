@@ -48,7 +48,6 @@ class TextEditorProgram(tk.Tk):
         return self.password_field
 
     def client_button_command(self):
-        print('Client selected')
         group = self.group_field.get()
         password = self.password_field.get()
         if group is "" or password is "":
@@ -61,7 +60,6 @@ class TextEditorProgram(tk.Tk):
         self.disable_buttons()
 
     def host_button_command(self):
-        print('Host selected')
         group = self.group_field.get()
         password = self.password_field.get()
         if group is "" or password is "":
