@@ -248,7 +248,13 @@ class Harald():
                     if data:
                         string_data = data.decode('utf-8')
                         if (remaining == -1):
-                            header_end = string_data.index('ALD') + len("ALD")
+                            try:
+                                header_end = string_data.index('ALD') + len("ALD")
+                            except ValueError as e:
+                                print(e)
+                                print("message lost")
+                                break
+                                
                             header = string_data[:header_end-1]
                             msg = string_data[header_end:]
                             msg_length = int(header[len("HAR"):-(len("ALD")-1)])
@@ -312,14 +318,7 @@ class Harald():
             data = sock.recv(1024)
             if data:
                 string_data = data.decode('utf-8')
-                formatted_data = {}
-                try:
-                    formatted_data = format_message(string_data)
-                except ValueError as e:
-                    print(e)
-                    print("Don't worry, all will be ok..")
-                    pass
-                    
+                formatted_data = format_message(string_data)
                 if formatted_data.get("_type") == "authentication" and formatted_data.get("message") == "granted":
                     return True
                 else:
