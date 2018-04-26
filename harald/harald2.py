@@ -19,6 +19,7 @@ class Harald():
         self.order_counter = 0
         self.next_order = 0
         self.synchronizing = True
+        self.own_datetime = None
         self.start_update_loop()
 
     def set_group(self, _group):
@@ -158,12 +159,12 @@ class Harald():
         earliest = None
         for match in service_matches:
             match_name = match['name'].decode('utf-8').split(' ')
-            match_group = match_name[:-2]
+            match_group = ' '.join(match_name[:-2])
             match_date = match_name[-2:-1][0]
             match_time = match_name[-1:][0]
             parsed = match_date + ' ' + match_time
             datetime = parser.parse(parsed)
-            if match_name == self.group:
+            if match_group == self.group:
                 if earliest == None or earliest > datetime:
                     perfect_match = match
 
@@ -203,9 +204,14 @@ class Harald():
             else:
                 for match in service_matches:
                     match_name = match['name'].decode('utf-8').split(' ')
-                    match_group = match_name[:-2]
+                    match_group = ' '.join(match_name[:-2])
+                    match_date = match_name[-2:-1][0]
+                    match_time = match_name[-1:][0]
+                    parsed = match_date + ' ' + match_time
+                    datetime = parser.parse(parsed)
                     if match_group == self.group:
-                        print('Found another Host: ' + match['host'])
+                        if self.own_datetime > datetime:
+                            print('Found an earlier Host: ' + match['host'])
 
     def advertise(self, client_socks):
         '''
@@ -219,8 +225,8 @@ class Harald():
 
         uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
 
-        host_datetime = datetime.datetime.utcnow()
-        name = self.group + ' ' + str(host_datetime)
+        self.own_datetime = datetime.datetime.utcnow()
+        name = self.group + ' ' + str(self.own_datetime)
 
         advertise_service(server_sock,
                           name,
