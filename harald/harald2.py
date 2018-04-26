@@ -110,6 +110,12 @@ class Harald():
         self.advertise_thread.setDaemon(True)
         self.advertise_thread.start()
 
+        self.check_others_thread = threading.Thread(
+            target=self.check_others,
+            )
+        self.check_others_thread.setDaemon(True)
+        self.check_others_thread.start()
+
     def start_client(self):
         self.synchronizing = True
         self.client_thread = threading.Thread(
@@ -159,6 +165,22 @@ class Harald():
         else:
             print('Host denied access')
             sock.close()
+
+    def check_others(self):
+        while True:
+            print('Checking if there are other Hosts')
+
+            uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
+            addr = None
+            service_matches = find_service( uuid = uuid, address = addr )
+
+            if len(service_matches) == 0:
+                print('No other Hosts found')
+
+            else:
+                for match in service_matches:
+                    if match['name'].decode('utf-8') == 'Host of ' + self.group:
+                        print('Found another Host: ' + match['host'])
 
     def advertise(self, client_socks):
         '''

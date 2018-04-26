@@ -10,7 +10,4 @@ Kaljaa
 93
 92
 91
-
-Client voi nyt alottaa Hostaamisen uudestaan:
-
-Joo, ja ex-Host voi liittyä uudestaan Clienttina.
+90
