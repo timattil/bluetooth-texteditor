@@ -76,13 +76,11 @@ class Harald():
                         self.order_counter += 1
                         self.recv_queue.put(rcv_msg)
                         formatted_msg = json.dumps(rcv_msg)
-                        header = "HAR" + str(len(formatted_msg)) + "ALD"
-                        #header_formatted_msg = header.encode()
-                        header_formatted_msg = header + formatted_msg
-                        
+                        msg_to_send = self.header_formation(formatted_msg)
+
                         for client in self.client_socks:
                             try:
-                                client.send(header_formatted_msg)
+                                client.send(msg_to_send)
                             except OSError:
                                 print('Lost connection to a Client. Removing Client from list.')
                                 client.close()
@@ -114,13 +112,16 @@ class Harald():
         '''
         This handles >1024 byte messages use always and only with receive
         '''
+        msg_to_send = self.header_formation(format_message)
+        self.host_sock.send(msg_to_send)
+    
+    def header_formation(self, formatted_msg):
         header = ""
         length_of_message = len(formatted_msg) + len("HARALD")
         if self.supportLongMessages and length_of_message > 1024:
-            header = "HAR" + length_of_message + "ALD"
+            header = "HAR" + length_of_message + "ALD"        
         
         msg_to_send = header + formatted_msg
-        self.host_sock.send(msg_to_send)
     
     def start_host(self):
         self.host_sock = None
@@ -133,11 +134,11 @@ class Harald():
         self.advertise_thread.setDaemon(True)
         self.advertise_thread.start()
 
-        self.check_others_thread = threading.Thread(
-            target=self.check_others,
-            )
-        self.check_others_thread.setDaemon(True)
-        self.check_others_thread.start()
+        #self.check_others_thread = threading.Thread(
+        #    target=self.check_others,
+        #    )
+        #self.check_others_thread.setDaemon(True)
+        #self.check_others_thread.start()
 
     def start_client(self):
         self.synchronizing = True
@@ -263,7 +264,7 @@ class Harald():
                                 json_started = string_data.find('{', 0, 15)
                                 if header_end_index == -1 or json_started > -1: 
                                     #Header not found
-                                    pass
+                                    msg = string_data
                                 else:
                                     header_end = header_end_index + len("ALD")
                                     header = string_data[:header_end-1]
