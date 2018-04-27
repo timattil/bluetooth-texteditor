@@ -135,11 +135,11 @@ class Harald():
         self.advertise_thread.setDaemon(True)
         self.advertise_thread.start()
 
-        #self.check_others_thread = threading.Thread(
-        #    target=self.check_others,
-        #    )
-        #self.check_others_thread.setDaemon(True)
-        #self.check_others_thread.start()
+        self.check_others_thread = threading.Thread(
+            target=self.check_others,
+            )
+        self.check_others_thread.setDaemon(True)
+        self.check_others_thread.start()
 
     def start_client(self):
         self.synchronizing = True
@@ -263,7 +263,7 @@ class Harald():
                             try:
                                 header_end_index = string_data.find('ALD', 0, 15)
                                 json_started = string_data.find('{', 0, 15)
-                                if header_end_index == -1 or json_started > -1: 
+                                if header_end_index == -1 or json_started < header_end_index: 
                                     #Header not found
                                     msg = string_data
                                 else:
@@ -327,6 +327,7 @@ class Harald():
                             print('Found earlier Host: ' + match['host'])
                             self.should_stop_hosting = True
                             self.start_client()
+                            return
                         else:
                             print('Found later Host ' + match['host'])
 
