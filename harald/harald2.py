@@ -112,17 +112,18 @@ class Harald():
         '''
         This handles >1024 byte messages use always and only with receive
         '''
-        msg_to_send = self.header_formation(format_message)
+        msg_to_send = self.header_formation(formatted_msg)
         self.host_sock.send(msg_to_send)
     
     def header_formation(self, formatted_msg):
         header = ""
         length_of_message = len(formatted_msg) + len("HARALD")
         if self.supportLongMessages and length_of_message > 1024:
-            header = "HAR" + length_of_message + "ALD"        
+            header = "HAR" + str(length_of_message) + "ALD"        
         
         msg_to_send = header + formatted_msg
-    
+        return msg_to_send
+
     def start_host(self):
         self.host_sock = None
         self.should_stop_hosting = False
