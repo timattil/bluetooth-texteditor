@@ -10,6 +10,7 @@ class Harald():
     def __init__(self, send_queue, recv_queue):
         self.group = None
         self.password = None
+        self.supportLongMessages = True
         self.send_queue = send_queue
         self.recv_queue = recv_queue
         self.socket_recv_queue = queue.Queue()
@@ -113,10 +114,13 @@ class Harald():
         '''
         This handles >1024 byte messages use always and only with receive
         '''
-        header = "HAR" + str(len(formatted_msg)) + "ALD"
-        #header_formatted_msg = header.encode()
-        header_formatted_msg = header + formatted_msg
-        self.host_sock.send(header_formatted_msg)
+        header = ""
+        length_of_message = len(formatted_msg) + len("HARALD")
+        if self.supportLongMessages and length_of_message > 1024:
+            header = "HAR" + length_of_message + "ALD"
+        
+        msg_to_send = header + formatted_msg
+        self.host_sock.send(msg_to_send)
     
     def start_host(self):
         self.host_sock = None
@@ -243,49 +247,51 @@ class Harald():
         This listens to receiving socket all the time.
         Large messages > 1024 bytes come in multiple messages, so those are handled aswell.
         '''
+        msg = ""
+        remaining = -1 # -1 for unknown
         while True:
             try:
-                msg = ""
-                whole_msg_recvd = False
-                remaining = -1 # -1 for unknown
-                while whole_msg_recvd == False:
-                    data = sock.recv(1024)
-                    # The problem might be if header is found from the end of previous message due latency. TODO test for that
-                    if data:
-                        string_data = data.decode('utf-8')
-                        if (remaining == -1):
+                data = sock.recv(1024)
+                # The problem occurs if header is found from the end of previous message due latency.
+                if data:
+                    string_data = data.decode('utf-8')
+                    if (remaining <= 0):
+                    # pass data to msg - start buffer if needed
+                        if self.supportLongMessages:
                             try:
-                                header_end_index = string_data.find('ALD', 0, 20)
-                                if header_end_index == -1: 
-                                    print("Header error: message lost You should not see this message")
-                                    break;
-                                header_end = header_end_index + len("ALD")
-                                header = string_data[:header_end-1]
-                                msg = string_data[header_end:]
-                                msg_length = int(header[len("HAR"):-(len("ALD")-1)])
-                                remaining = msg_length - 1024 + len(header)
+                                header_end_index = string_data.find('ALD', 0, 15)
+                                json_started = string.data.find('{', 0, 15)
+                                if header_end_index == -1 or json_started > -1: 
+                                    #Header not found
+                                    pass
+                                else:
+                                    header_end = header_end_index + len("ALD")
+                                    header = string_data[:header_end-1]
+                                    msg = string_data[header_end:]
+                                    msg_length = int(header[len("HAR"):-(len("ALD")-1)])
+                                    remaining = msg_length - 1024
                             except ValueError as e:
                                 print(e)
-                                print("message lost")
-                                break
-                                
-                        else:
-                            msg += string_data
-                            remaining = remaining - 1024
-                            
-                        if remaining <= 0:
-                            try:
-                                formatted_data = format_message(msg)
-                                self.socket_recv_queue.put(formatted_data)
-                            except ValueError as e:
-                                print(e)
-                                print("Don't worry, all will be ok..")
+                                print("ValueError on parsing header")
                                 pass
-                            
-                            
-                            whole_msg_recvd = True
-
-                        #print("Harald received:", string_data)
+                        else:
+                            msg = string_data  
+                    
+                    else:
+                    # buffer has been started
+                        msg += string_data
+                        remaining = remaining - 1024
+                        
+                    if remaining <= 0:
+                    # message is ready to parse
+                        try:
+                            formatted_data = format_message(msg)
+                            self.socket_recv_queue.put(formatted_data)
+                        except ValueError as e:
+                            print(e)
+                            print("Message lost..")
+                            pass
+                    #print("Harald received:", string_data)
 
             except OSError:
                 if self.host_sock:
