@@ -260,7 +260,7 @@ class Harald():
                         if self.supportLongMessages:
                             try:
                                 header_end_index = string_data.find('ALD', 0, 15)
-                                json_started = string.data.find('{', 0, 15)
+                                json_started = string_data.find('{', 0, 15)
                                 if header_end_index == -1 or json_started > -1: 
                                     #Header not found
                                     pass
