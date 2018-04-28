@@ -17,6 +17,7 @@ class Harald():
         self.socket_send_queue = queue.Queue()
         self.client_socks = []
         self.host_sock = None # If sock here, then we in Client mode!
+        self.server_sock = None
         self.order_counter = 0
         self.next_order = 0
         self.synchronizing = True
@@ -158,15 +159,18 @@ class Harald():
         '''
         Client searches and connects to Host using this.
         '''
-        print('Searching all nearby bluetooth devices for the Host')
-
         uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
         addr = None
-        service_matches = find_service( uuid = uuid, address = addr )
 
-        if len(service_matches) == 0:
-            print('Couldn\'t find the Host =(')
-            sys.exit(0)
+        while True:
+            print('Searching all nearby bluetooth devices for the Host')
+            service_matches = find_service( uuid = uuid, address = addr )
+
+            if len(service_matches) == 0:
+                print('Couldn\'t find the Host =(')
+                pass
+            else:
+                break
 
         perfect_match = None
         earliest = None
@@ -207,18 +211,18 @@ class Harald():
         '''
         This continuously advertises Host's service and takes in new clients.
         '''
-        server_sock = BluetoothSocket(RFCOMM)
-        server_sock.bind(('', PORT_ANY))
-        server_sock.listen(1)
+        self.server_sock = BluetoothSocket(RFCOMM)
+        self.server_sock.bind(('', PORT_ANY))
+        self.server_sock.listen(1)
 
-        port = server_sock.getsockname()[1]
+        port = self.server_sock.getsockname()[1]
 
         uuid = 'c125a726-4370-4745-9787-b486c687c3a4'
 
         self.own_datetime = datetime.datetime.utcnow()
         name = self.group + ' ' + str(self.own_datetime)
 
-        advertise_service(server_sock,
+        advertise_service(self.server_sock,
                           name,
                           service_id = uuid,
                           service_classes = [ uuid, SERIAL_PORT_CLASS ],
@@ -228,8 +232,18 @@ class Harald():
 
         while True:
             if self.should_stop_hosting:
+                print('Should stop hosting. Closing advertise thread.')
+                stop_advertising(self.server_sock)
+                self.server_sock.close()
                 return
-            client_sock, client_info = server_sock.accept()
+            try:
+                client_sock, client_info = self.server_sock.accept()
+            except OSError:
+                print('Should stop hosting. Closing advertise thread.')
+                # Server_sock was probably closed by stop_advertise().
+                # Blocking .accept() above doesn't like that.
+                # Anyway, should stop advertising so return: 
+                return
             if self.give_access(client_sock):
                 print('Accepted connection from ', client_info)
                 client_socks.append(client_sock)
@@ -243,6 +257,10 @@ class Harald():
             else:
                 client_sock.close()
                 print('Denied connection from ', client_info)
+
+    def stop_advertise(self):
+        stop_advertising(self.server_sock)
+        self.server_sock.close()
 
     def receive(self, sock):
         '''
@@ -326,6 +344,7 @@ class Harald():
                         if self.own_datetime > datetime:
                             print('Found earlier Host: ' + match['host'])
                             self.should_stop_hosting = True
+                            self.stop_advertise()
                             self.start_client()
                             return
                         else:
