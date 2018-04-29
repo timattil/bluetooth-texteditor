@@ -45,7 +45,9 @@ class Harald():
 
     def handle_socket_receive(self):
         '''
-        This does quite a few things.
+        This handles received messages.
+        Clients receive incoming messages to execute. If order is not in sync, sync request is sent.
+        Host orders any messages and broadcasts them to all clients.
         '''
         try:
             while True:
@@ -106,7 +108,7 @@ class Harald():
         except queue.Empty:
             pass
         except OSError:
-            print('Lost connection to Host.')
+            print('Lost connection to Host. Cancelling send message.')
             self.lost_host()
     
     def socket_send_msg(self, formatted_msg):
@@ -197,6 +199,7 @@ class Harald():
 
         sock = BluetoothSocket( RFCOMM )
         sock.connect((host, port))
+        
         print('Authenticating')
         if self.ask_access(sock):
             # Start receiving data from host in this thread!
@@ -352,6 +355,7 @@ class Harald():
 
     def lost_host(self):
         print('Host lost. Starting as new Host.')
+        self.host_sock.close()
         self.host_sock = None
         self.start_host()
 
